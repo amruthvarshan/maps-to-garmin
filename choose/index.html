@@ -45,7 +45,8 @@
   .rc{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;
     background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer;color:var(--text);font-family:inherit;transition:border-color .15s,background .15s}
   .rc[aria-selected="true"]{border-color:var(--mint);background:rgba(111,227,173,.10)}
-  .rc .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto}
+  .rc .dot{position:relative;width:12px;height:12px;border-radius:50%;flex:0 0 auto}
+  .rc[aria-selected="true"] .dot::after{content:"";position:absolute;top:50%;left:50%;width:5px;height:5px;border-radius:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.55)}
   .rc-main{min-width:0}
   .via{font-weight:600;font-size:15px;overflow-wrap:anywhere;word-break:break-word;line-height:1.25}
   .line2{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -69,6 +70,10 @@
   button:active{transform:scale(.985)} button:disabled{opacity:.4}
   .btn-primary{background:var(--amber);color:#2a1c00} .btn-ghost{background:transparent;color:var(--mint);border:1px solid var(--line)}
   .hint{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.45}
+
+  .mode-head{margin:14px 0 2px}
+  .mode-title{font-size:20px;font-weight:700;color:var(--amber);letter-spacing:-.01em}
+  .mode-byline{font-family:"Space Mono",monospace;font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
 
   details.debug{margin-top:12px}
   details.debug summary{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);cursor:pointer}
@@ -101,7 +106,10 @@
     </div>
 
     <p class="status" id="status">Waiting for a shared link&hellip;</p>
-    <p class="hint" id="modeNote" hidden></p>
+    <div class="mode-head" id="modeHead" hidden>
+      <div class="mode-title" id="modeTitle">Driving route</div>
+      <div class="mode-byline" id="modeByline" hidden></div>
+    </div>
 
     <div class="routes" id="routes" hidden></div>
 
@@ -133,7 +141,7 @@
     <button class="btn-ghost" id="manualBtn">Find route options</button>
   </section>
 
-  <footer>Live traffic-coloured route options &middot; travel modes &middot; per-route area labels &middot; choose build v9</footer>
+  <footer>Live traffic-coloured route options &middot; travel modes &middot; per-route area labels &middot; choose build v10</footer>
 </main>
 
 <script>
@@ -160,7 +168,7 @@
   function speedWord(sp){ return sp==="TRAFFIC_JAM"?"Heavy":sp==="SLOW"?"Slow":sp==="NORMAL"?"Clear":"\u2014"; }
 
   async function processUrl(mapsUrl, start){
-    ["mapWrap","trafficPanel","routes","turnsBox","actions","handoffHint","debug","modeNote"].forEach(id=>$(id).hidden=true);
+    ["mapWrap","trafficPanel","routes","turnsBox","actions","handoffHint","debug","modeHead"].forEach(id=>$(id).hidden=true);
     if(!start) $("startBox").hidden=true;
     routes=[]; scrubT=null; $("scrubOut").innerHTML="&nbsp;"; currentLink=mapsUrl;
     setStatus(start?"Finding routes from your start point\u2026":"Finding route options\u2026");
@@ -189,7 +197,7 @@
 
   function renderResults(info){
     destinationName=info.destinationName||null;
-    showModeNote(info.travelMode||"DRIVE");
+    showModeHead(info.travelMode||"DRIVE");
     routes=(info.routes||[]).map(r=>{
       const pts=decodePolyline(r.encodedPolyline||"");
       return { points:pts, cum:cumDist(pts), description:r.description||"", distanceMeters:r.distanceMeters||0,
@@ -314,10 +322,12 @@
   $("manualInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); submitManual(); } });
 
   function modeLabel(m){ return {DRIVE:"Driving",WALK:"Walking",BICYCLE:"Cycling",TWO_WHEELER:"Two-wheeler",TRANSIT:"Transit"}[m]||"Driving"; }
-  function showModeNote(m){
+  function showModeHead(m){
+    $("modeTitle").textContent = modeLabel(m)+" route";
     const beta = (m==="WALK"||m==="BICYCLE"||m==="TWO_WHEELER");
-    $("modeNote").textContent = "Mode: "+modeLabel(m)+(beta?" \u00b7 beta \u2014 paths may be imperfect; verify before relying on it.":"");
-    $("modeNote").hidden = false;
+    if(beta){ $("modeByline").textContent = "Beta mode \u2014 paths may be imperfect; verify before relying on it."; $("modeByline").hidden=false; }
+    else $("modeByline").hidden=true;
+    $("modeHead").hidden = false;
   }
 
   function showDebug(info){ const pre=$("debugPre"); pre.innerHTML="";
