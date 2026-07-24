@@ -115,6 +115,14 @@
   .btn-primary { background: var(--amber); color: #2a1c00; }
   .btn-ghost { background: transparent; color: var(--mint); border: 1px solid var(--line); }
 
+  .hint {
+    font-family: "Space Mono", monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin: 10px 0 0;
+    line-height: 1.45;
+  }
+
   details.debug { margin-top: 12px; }
   details.debug summary {
     font-family: "Space Mono", monospace;
@@ -188,9 +196,9 @@
       </div>
 
       <div class="actions" id="actions" hidden>
-        <button class="btn-primary" id="shareBtn">Send to Garmin Connect</button>
-        <button class="btn-ghost" id="downloadBtn">Save route.gpx</button>
+        <button class="btn-primary" id="downloadBtn">Download .gpx</button>
       </div>
+      <p class="hint" id="handoffHint" hidden>After it downloads, open the file and choose Garmin Connect to import it as a course.</p>
 
       <div class="manual" id="startBox" hidden style="margin-top:16px">
         <label for="startInput">Start from — address or “lat, lng”</label>
@@ -210,7 +218,7 @@
       <button class="btn-ghost" id="manualBtn">Convert this link</button>
     </section>
 
-    <footer>Uses Google's recommended route · breadcrumb navigation on the watch · build v3</footer>
+    <footer>Uses Google's recommended route · breadcrumb navigation on the watch · build v6</footer>
   </main>
 
 <script>
@@ -227,6 +235,7 @@
   const statusEl = $("status");
   let lastBlob = null;
   let currentLink = null;
+  let currentFilename = "route.gpx";
 
   function setStatus(msg, kind) {
     statusEl.textContent = msg;
@@ -275,18 +284,28 @@
 
       const gpx = await resp.text();
       lastBlob = new Blob([gpx], { type: "application/gpx+xml" });
+      currentFilename = filenameFromResponse(resp) || "route.gpx";
 
       const pts = drawRoute(gpx);
-      setStatus("Route ready. Send it to Garmin Connect, or save the file and open it there.", "ok");
       $("ptCount").textContent = pts;
       $("meta").hidden = false;
+      $("downloadBtn").textContent = "Download " + currentFilename;
       $("actions").hidden = false;
-
-      // Try an automatic save so the file is already on the phone.
-      triggerDownload();
+      $("handoffHint").hidden = false;
+      setStatus("Route ready. Tap Download, then open the file and choose Garmin Connect.", "ok");
     } catch (e) {
       setStatus("Network error: " + e.message, "error");
     }
+  }
+
+  // Read the destination-based filename the Worker set (via Content-Disposition).
+  function filenameFromResponse(resp) {
+    const cd = resp.headers.get("Content-Disposition") || resp.headers.get("content-disposition");
+    if (!cd) return null;
+    let m = cd.match(/filename\*\s*=\s*(?:UTF-8'')?"?([^";]+)"?/i);
+    if (!m) m = cd.match(/filename\s*=\s*"?([^";]+)"?/i);
+    if (!m) return null;
+    try { return decodeURIComponent(m[1].trim()); } catch { return m[1].trim(); }
   }
 
   // Called when the link starts from "Your location" and has no real origin.
@@ -376,25 +395,12 @@
     if (!lastBlob) return;
     const a = document.createElement("a");
     a.href = URL.createObjectURL(lastBlob);
-    a.download = "route.gpx";
+    a.download = currentFilename || "route.gpx";
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
   }
 
-  async function sendToGarmin() {
-    if (!lastBlob) return;
-    const file = new File([lastBlob], "route.gpx", { type: "application/gpx+xml" });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: "Route" });
-      } catch (e) { /* user cancelled */ }
-    } else {
-      setStatus("Direct sharing isn't available here. Use “Save route.gpx”, then open it and pick Garmin Connect.", "error");
-    }
-  }
-
-  $("shareBtn").addEventListener("click", sendToGarmin);
   $("downloadBtn").addEventListener("click", triggerDownload);
   $("startBtn").addEventListener("click", () => {
     const v = $("startInput").value.trim();
