@@ -1,6 +1,6 @@
 {
-  "name": "Maps to Garmin",
-  "short_name": "Maps2Garmin",
+  "name": "Best Route to Garmin",
+  "short_name": "Best Route to Garmin",
   "description": "Turn a shared Google Maps route into a GPX course for Garmin Connect.",
   "start_url": "index.html",
   "scope": "./",
