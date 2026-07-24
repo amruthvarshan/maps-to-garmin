@@ -192,6 +192,12 @@
         <button class="btn-ghost" id="downloadBtn">Save route.gpx</button>
       </div>
 
+      <div class="manual" id="startBox" hidden style="margin-top:16px">
+        <label for="startInput">Start from — address or “lat, lng”</label>
+        <input id="startInput" type="text" inputmode="text" placeholder="e.g. MG Road, Bengaluru" />
+        <button class="btn-ghost" id="startBtn">Use this start</button>
+      </div>
+
       <details class="debug" id="debug" hidden>
         <summary>Diagnostics</summary>
         <pre id="debugPre"></pre>
@@ -210,7 +216,7 @@
 <script>
   // ===================================================================
   //  EDIT THIS ONE LINE: paste your Cloudflare Worker URL (no trailing slash)
-  const WORKER_URL = "https://maps-to-garmin.amruthvarshan.workers.dev";
+  const WORKER_URL = "https://YOUR-WORKER-SUBDOMAIN.workers.dev";
   // ===================================================================
 
   if ("serviceWorker" in navigator) {
@@ -220,6 +226,7 @@
   const $ = (id) => document.getElementById(id);
   const statusEl = $("status");
   let lastBlob = null;
+  let currentLink = null;
 
   function setStatus(msg, kind) {
     statusEl.textContent = msg;
@@ -232,13 +239,15 @@
     return m ? m[0] : null;
   }
 
-  async function processUrl(mapsUrl) {
+  async function processUrl(mapsUrl, start) {
     $("actions").hidden = true;
     $("preview").hidden = true;
     $("meta").hidden = true;
     $("debug").hidden = true;
+    if (!start) $("startBox").hidden = true;
     lastBlob = null;
-    setStatus("Reading the route…");
+    currentLink = mapsUrl;
+    setStatus(start ? "Building the route from your start point…" : "Reading the route…");
 
     if (WORKER_URL.includes("YOUR-WORKER")) {
       setStatus("Set WORKER_URL at the top of index.html to your Worker address first.", "error");
@@ -246,14 +255,21 @@
     }
 
     try {
-      const resp = await fetch(WORKER_URL + "/?u=" + encodeURIComponent(mapsUrl));
+      let api = WORKER_URL + "/?u=" + encodeURIComponent(mapsUrl);
+      if (start) api += "&start=" + encodeURIComponent(start);
+      const resp = await fetch(api);
       const ct = resp.headers.get("content-type") || "";
 
-      if (!resp.ok || ct.includes("application/json")) {
+      if (ct.includes("application/json")) {
         let info;
         try { info = await resp.json(); } catch { info = { error: "Request failed (" + resp.status + ")." }; }
+        if (info.needsStart) { requestStart(); return; }
         setStatus(info.error || "Something went wrong.", "error");
         showDebug(info);
+        return;
+      }
+      if (!resp.ok) {
+        setStatus("Request failed (" + resp.status + ").", "error");
         return;
       }
 
@@ -271,6 +287,30 @@
     } catch (e) {
       setStatus("Network error: " + e.message, "error");
     }
+  }
+
+  // Called when the link starts from "Your location" and has no real origin.
+  function requestStart() {
+    if (!navigator.geolocation) {
+      setStatus("This route starts from “your location”, but this browser can't read GPS. Type a start point below.", "error");
+      $("startBox").hidden = false;
+      return;
+    }
+    setStatus("This route starts from “your location” — getting your GPS position…");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const s = pos.coords.latitude.toFixed(6) + "," + pos.coords.longitude.toFixed(6);
+        processUrl(currentLink, s);
+      },
+      (err) => {
+        setStatus(
+          "Couldn't get your location (" + err.message + "). Allow location access and try again, or type a start point below.",
+          "error"
+        );
+        $("startBox").hidden = false;
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   }
 
   function showDebug(info) {
@@ -356,6 +396,10 @@
 
   $("shareBtn").addEventListener("click", sendToGarmin);
   $("downloadBtn").addEventListener("click", triggerDownload);
+  $("startBtn").addEventListener("click", () => {
+    const v = $("startInput").value.trim();
+    if (v && currentLink) processUrl(currentLink, v);
+  });
   $("manualBtn").addEventListener("click", () => {
     const v = firstUrl($("manualInput").value) || $("manualInput").value.trim();
     if (v) processUrl(v);
