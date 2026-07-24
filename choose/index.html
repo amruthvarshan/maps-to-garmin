@@ -132,7 +132,7 @@
     <button class="btn-ghost" id="manualBtn">Find route options</button>
   </section>
 
-  <footer>Live traffic-coloured route options &middot; breadcrumb navigation on the watch &middot; choose build v3</footer>
+  <footer>Live traffic-coloured route options &middot; breadcrumb navigation on the watch &middot; choose build v4</footer>
 </main>
 
 <script>
@@ -308,7 +308,7 @@
   function clampIdx(i,N){ i=i||0; return Math.max(0,Math.min(N-1,i)); }
   function deltaMin(r){ const d=parseInt(r.duration,10)||0, s=parseInt(r.staticDuration,10)||0; return s?Math.round((d-s)/60):0; }
   function speedAt(r,idx){ for(const iv of r.speedIntervals){ if(idx>=(iv.startPolylinePointIndex||0)&&idx<=(iv.endPolylinePointIndex||0)) return iv.speed; } return ""; }
-  function trafficSummary(r){ let jam=0,slow=0,tot=0; r.speedIntervals.forEach(iv=>{ const len=(iv.endPolylinePointIndex-iv.startPolylinePointIndex)||0; tot+=len; if(iv.speed==="TRAFFIC_JAM")jam+=len; else if(iv.speed==="SLOW")slow+=len; });
+  function trafficSummary(r){ let jam=0,slow=0,tot=0; r.speedIntervals.forEach(iv=>{ const len=Math.max(0,(iv.endPolylinePointIndex||0)-(iv.startPolylinePointIndex||0)); tot+=len; if(iv.speed==="TRAFFIC_JAM")jam+=len; else if(iv.speed==="SLOW")slow+=len; });
     if(!tot) return {text:"traffic n/a",color:"#9fb8ad"}; const jr=jam/tot,sr=slow/tot;
     if(jr>0.12) return {text:"heavy in parts",color:"#f2705d"}; if(sr+jr>0.25) return {text:"some slow",color:"#f2b84b"}; return {text:"mostly clear",color:"#5fd39a"}; }
   function cumDist(pts){ const c=[0]; for(let i=1;i<pts.length;i++) c[i]=c[i-1]+hav(pts[i-1],pts[i]); return c; }
