@@ -101,6 +101,7 @@
     </div>
 
     <p class="status" id="status">Waiting for a shared link&hellip;</p>
+    <p class="hint" id="modeNote" hidden></p>
 
     <div class="routes" id="routes" hidden></div>
 
@@ -132,7 +133,7 @@
     <button class="btn-ghost" id="manualBtn">Find route options</button>
   </section>
 
-  <footer>Live traffic-coloured route options &middot; per-route area labels &middot; breadcrumb navigation on the watch &middot; choose build v7</footer>
+  <footer>Live traffic-coloured route options &middot; travel modes &middot; per-route area labels &middot; choose build v9</footer>
 </main>
 
 <script>
@@ -159,13 +160,13 @@
   function speedWord(sp){ return sp==="TRAFFIC_JAM"?"Heavy":sp==="SLOW"?"Slow":sp==="NORMAL"?"Clear":"\u2014"; }
 
   async function processUrl(mapsUrl, start){
-    ["mapWrap","trafficPanel","routes","turnsBox","actions","handoffHint","debug"].forEach(id=>$(id).hidden=true);
+    ["mapWrap","trafficPanel","routes","turnsBox","actions","handoffHint","debug","modeNote"].forEach(id=>$(id).hidden=true);
     if(!start) $("startBox").hidden=true;
     routes=[]; scrubT=null; $("scrubOut").innerHTML="&nbsp;"; currentLink=mapsUrl;
     setStatus(start?"Finding routes from your start point\u2026":"Finding route options\u2026");
     if(WORKER_URL.includes("YOUR-WORKER")){ setStatus("Set WORKER_URL at the top of index.html to your Worker address first.","error"); return; }
     try{
-      let api=WORKER_URL+"/?mode=alternatives&traffic=1&labels=1&u="+encodeURIComponent(mapsUrl);
+      let api=WORKER_URL+"/?mode=alternatives&traffic=1&merge=1&labels=1&u="+encodeURIComponent(mapsUrl);
       if(start) api+="&start="+encodeURIComponent(start);
       const resp=await fetch(api);
       let info; try{ info=await resp.json(); }catch{ info=null; }
@@ -188,6 +189,7 @@
 
   function renderResults(info){
     destinationName=info.destinationName||null;
+    showModeNote(info.travelMode||"DRIVE");
     routes=(info.routes||[]).map(r=>{
       const pts=decodePolyline(r.encodedPolyline||"");
       return { points:pts, cum:cumDist(pts), description:r.description||"", distanceMeters:r.distanceMeters||0,
@@ -304,8 +306,19 @@
     const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([gpx],{type:"application/gpx+xml"})); a.download=currentFilename();
     document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);
   });
-  $("startBtn").addEventListener("click",()=>{ const v=$("startInput").value.trim(); if(v&&currentLink) processUrl(currentLink,v); });
-  $("manualBtn").addEventListener("click",()=>{ const v=firstUrl($("manualInput").value)||$("manualInput").value.trim(); if(v) processUrl(v); });
+  function submitStart(){ const v=$("startInput").value.trim(); if(v&&currentLink) processUrl(currentLink,v); }
+  function submitManual(){ const v=firstUrl($("manualInput").value)||$("manualInput").value.trim(); if(v) processUrl(v); }
+  $("startBtn").addEventListener("click", submitStart);
+  $("manualBtn").addEventListener("click", submitManual);
+  $("startInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); submitStart(); } });
+  $("manualInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); submitManual(); } });
+
+  function modeLabel(m){ return {DRIVE:"Driving",WALK:"Walking",BICYCLE:"Cycling",TWO_WHEELER:"Two-wheeler",TRANSIT:"Transit"}[m]||"Driving"; }
+  function showModeNote(m){
+    const beta = (m==="WALK"||m==="BICYCLE"||m==="TWO_WHEELER");
+    $("modeNote").textContent = "Mode: "+modeLabel(m)+(beta?" \u00b7 beta \u2014 paths may be imperfect; verify before relying on it.":"");
+    $("modeNote").hidden = false;
+  }
 
   function showDebug(info){ const pre=$("debugPre"); pre.innerHTML="";
     if(info&&info.expandedUrl){ const a=document.createElement("a"); a.href=info.expandedUrl; a.textContent=info.expandedUrl; a.target="_blank"; pre.appendChild(a); pre.appendChild(document.createTextNode("\n\n")); }
