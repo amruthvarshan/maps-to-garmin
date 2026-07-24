@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Choose Route to Garmin</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#0c231f" />
+<meta name="apple-mobile-web-app-title" content="Choose Route to Garmin" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0c231f;
+    --surface: #10322a;
+    --line: rgba(111, 227, 173, 0.18);
+    --mint: #6fe3ad;
+    --amber: #f2b84b;
+    --text: #e8f2ee;
+    --muted: #8bab9f;
+    --danger: #f2a08b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); }
+  body {
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    justify-content: center;
+    padding: 28px 20px calc(28px + env(safe-area-inset-bottom));
+    line-height: 1.5;
+  }
+  .wrap { width: 100%; max-width: 460px; }
+
+  .eyebrow {
+    font-family: "Space Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--mint);
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-size: clamp(26px, 7.5vw, 38px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 6px;
+    line-height: 1.05;
+  }
+  h1 .arrow { color: var(--amber); }
+  .sub { color: var(--muted); font-size: 15px; margin: 0 0 26px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 20px;
+    margin-bottom: 18px;
+  }
+
+  .overlay { position: relative; }
+  .overlay svg { width: 100%; height: 176px; display: block; }
+
+  .status {
+    font-family: "Space Mono", monospace;
+    font-size: 13.5px;
+    color: var(--muted);
+    margin: 0;
+    word-break: break-word;
+  }
+  .status.error { color: var(--danger); }
+  .status.ok { color: var(--mint); }
+
+  .routes { display: grid; gap: 10px; margin-top: 14px; }
+  .route-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+    background: rgba(0,0,0,0.18);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 14px;
+    cursor: pointer;
+    color: var(--text);
+    font-family: inherit;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .route-card[aria-selected="true"] {
+    border-color: var(--mint);
+    background: rgba(111, 227, 173, 0.10);
+  }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; flex: 0 0 auto; }
+  .route-main { flex: 1 1 auto; min-width: 0; }
+  .route-via {
+    font-weight: 600;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .route-stats {
+    font-family: "Space Mono", monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .route-chip {
+    font-family: "Space Mono", monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #12261f;
+    background: var(--mint);
+    border-radius: 6px;
+    padding: 3px 6px;
+    flex: 0 0 auto;
+  }
+  .route-radio {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--muted);
+    flex: 0 0 auto;
+  }
+  .route-card[aria-selected="true"] .route-radio {
+    border-color: var(--mint);
+    background: radial-gradient(circle at center, var(--mint) 0 5px, transparent 5.5px);
+  }
+
+  .actions { margin-top: 16px; }
+  button.btn-primary,
+  button.btn-ghost {
+    font-family: "Space Grotesk", sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    border: 0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    width: 100%;
+    transition: transform 0.06s ease, opacity 0.15s ease;
+  }
+  button:active { transform: scale(0.985); }
+  button:disabled { opacity: 0.4; cursor: default; }
+  .btn-primary { background: var(--amber); color: #2a1c00; }
+  .btn-ghost { background: transparent; color: var(--mint); border: 1px solid var(--line); }
+
+  .hint {
+    font-family: "Space Mono", monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin: 10px 0 0;
+    line-height: 1.45;
+  }
+
+  details.debug { margin-top: 12px; }
+  details.debug summary {
+    font-family: "Space Mono", monospace;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  details.debug pre {
+    font-family: "Space Mono", monospace;
+    font-size: 11px;
+    color: var(--muted);
+    background: rgba(0,0,0,0.25);
+    border-radius: 10px;
+    padding: 12px;
+    overflow: auto;
+    max-height: 220px;
+  }
+  details.debug a { color: var(--mint); word-break: break-all; }
+
+  .manual label {
+    font-family: "Space Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 8px;
+  }
+  .manual input {
+    width: 100%;
+    font-family: "Space Mono", monospace;
+    font-size: 13px;
+    color: var(--text);
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .manual input:focus { outline: 2px solid var(--mint); outline-offset: 0; }
+
+  footer {
+    color: var(--muted);
+    font-size: 12px;
+    font-family: "Space Mono", monospace;
+    text-align: center;
+    margin-top: 8px;
+    opacity: 0.7;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    button:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <p class="eyebrow">Route transfer · chooser</p>
+    <h1>Choose Route <span class="arrow">→</span> Garmin</h1>
+    <p class="sub">Share a route here, pick from the options, and save the one you want as a course.</p>
+
+    <section class="card">
+      <div class="overlay" id="overlay" hidden>
+        <svg id="overlaySvg" viewBox="0 0 400 176" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
+      </div>
+      <p class="status" id="status">Waiting for a shared link…</p>
+
+      <div class="routes" id="routes" hidden></div>
+
+      <div class="actions" id="actions" hidden>
+        <button class="btn-primary" id="downloadBtn">Download selected route</button>
+      </div>
+      <p class="hint" id="handoffHint" hidden>After it downloads, open the file and choose Garmin Connect to import it as a course.</p>
+
+      <div class="manual" id="startBox" hidden style="margin-top:16px">
+        <label for="startInput">Start from — address or “lat, lng”</label>
+        <input id="startInput" type="text" inputmode="text" placeholder="e.g. MG Road, Bengaluru" />
+        <button class="btn-ghost" id="startBtn">Use this start</button>
+      </div>
+
+      <details class="debug" id="debug" hidden>
+        <summary>Diagnostics</summary>
+        <pre id="debugPre"></pre>
+      </details>
+    </section>
+
+    <section class="card manual">
+      <label for="manualInput">Test without sharing — paste a Maps link</label>
+      <input id="manualInput" type="url" inputmode="url" placeholder="https://maps.app.goo.gl/…" />
+      <button class="btn-ghost" id="manualBtn">Find route options</button>
+    </section>
+
+    <footer>Shows Google's route alternatives · breadcrumb navigation on the watch · choose build v1</footer>
+  </main>
+
+<script>
+  // ===================================================================
+  //  EDIT THIS ONE LINE: same Cloudflare Worker URL as the other app
+  const WORKER_URL = "https://YOUR-WORKER-SUBDOMAIN.workers.dev";
+  // ===================================================================
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+
+  const $ = (id) => document.getElementById(id);
+  const statusEl = $("status");
+  const COLORS = ["#6fe3ad", "#f2b84b", "#7db3ff", "#f2a08b", "#c9a6ff"];
+
+  let currentLink = null;
+  let destinationName = null;
+  let routes = [];        // [{ points:[{lat,lng}], description, distanceMeters, duration, routeLabels }]
+  let selectedIdx = 0;
+
+  function setStatus(msg, kind) {
+    statusEl.textContent = msg;
+    statusEl.className = "status" + (kind ? " " + kind : "");
+  }
+
+  function firstUrl(str) {
+    if (!str) return null;
+    const m = str.match(/https?:\/\/\S+/);
+    return m ? m[0] : null;
+  }
+
+  async function processUrl(mapsUrl, start) {
+    $("overlay").hidden = true;
+    $("routes").hidden = true;
+    $("actions").hidden = true;
+    $("handoffHint").hidden = true;
+    $("debug").hidden = true;
+    if (!start) $("startBox").hidden = true;
+    routes = [];
+    currentLink = mapsUrl;
+    setStatus(start ? "Finding routes from your start point…" : "Finding route options…");
+
+    if (WORKER_URL.includes("YOUR-WORKER")) {
+      setStatus("Set WORKER_URL at the top of index.html to your Worker address first.", "error");
+      return;
+    }
+
+    try {
+      let api = WORKER_URL + "/?mode=alternatives&u=" + encodeURIComponent(mapsUrl);
+      if (start) api += "&start=" + encodeURIComponent(start);
+      const resp = await fetch(api);
+      let info;
+      try { info = await resp.json(); } catch { info = null; }
+
+      if (!info) { setStatus("Unexpected response from the server.", "error"); return; }
+      if (info.needsStart) { requestStart(); return; }
+      if (info.error || !Array.isArray(info.routes)) {
+        setStatus(info.error || "Something went wrong.", "error");
+        showDebug(info);
+        return;
+      }
+      renderResults(info);
+    } catch (e) {
+      setStatus("Network error: " + e.message, "error");
+    }
+  }
+
+  function requestStart() {
+    if (!navigator.geolocation) {
+      setStatus("This route starts from “your location”, but this browser can't read GPS. Type a start point below.", "error");
+      $("startBox").hidden = false;
+      return;
+    }
+    setStatus("This route starts from “your location” — getting your GPS position…");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const s = pos.coords.latitude.toFixed(6) + "," + pos.coords.longitude.toFixed(6);
+        processUrl(currentLink, s);
+      },
+      (err) => {
+        setStatus("Couldn't get your location (" + err.message + "). Allow location access and try again, or type a start point below.", "error");
+        $("startBox").hidden = false;
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }
+
+  function renderResults(info) {
+    destinationName = info.destinationName || null;
+    routes = (info.routes || [])
+      .map((r) => ({
+        points: decodePolyline(r.encodedPolyline || ""),
+        description: r.description || "",
+        distanceMeters: r.distanceMeters || 0,
+        duration: r.duration || "",
+        routeLabels: r.routeLabels || [],
+      }))
+      .filter((r) => r.points.length >= 2);
+
+    if (!routes.length) {
+      setStatus("No route options were returned for that link.", "error");
+      return;
+    }
+
+    selectedIdx = 0;
+    drawOverlay();
+    drawCards();
+    updateDownloadLabel();
+    $("overlay").hidden = false;
+    $("routes").hidden = false;
+    $("actions").hidden = false;
+    $("handoffHint").hidden = false;
+    setStatus(
+      routes.length > 1
+        ? routes.length + " routes found — tap one, then Download."
+        : "1 route found — Download it below.",
+      "ok"
+    );
+  }
+
+  function drawOverlay() {
+    const all = [];
+    for (const r of routes) for (const p of r.points) all.push(p);
+    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+    for (const p of all) {
+      if (p.lat < minLat) minLat = p.lat; if (p.lat > maxLat) maxLat = p.lat;
+      if (p.lng < minLng) minLng = p.lng; if (p.lng > maxLng) maxLng = p.lng;
+    }
+    const W = 400, H = 176, pad = 20;
+    const spanLat = (maxLat - minLat) || 1e-6;
+    const spanLng = (maxLng - minLng) || 1e-6;
+    const scale = Math.min((W - 2 * pad) / spanLng, (H - 2 * pad) / spanLat);
+    const offX = (W - spanLng * scale) / 2;
+    const offY = (H - spanLat * scale) / 2;
+    const proj = (p) => [offX + (p.lng - minLng) * scale, H - (offY + (p.lat - minLat) * scale)];
+
+    // Draw unselected routes first, then the selected one on top.
+    const order = routes.map((_, i) => i).sort((a, b) => (a === selectedIdx ? 1 : 0) - (b === selectedIdx ? 1 : 0));
+    let svg = "";
+    for (const i of order) {
+      const proj_pts = routes[i].points.map(proj);
+      const d = proj_pts.map((q, k) => (k ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ");
+      const sel = i === selectedIdx;
+      svg += '<path d="' + d + '" fill="none" stroke="' + COLORS[i % COLORS.length] +
+        '" stroke-width="' + (sel ? 4.5 : 2.5) + '" stroke-opacity="' + (sel ? 1 : 0.4) +
+        '" stroke-linecap="round" stroke-linejoin="round"></path>';
+    }
+    const sp = proj(routes[selectedIdx].points[0]);
+    const ep = proj(routes[selectedIdx].points[routes[selectedIdx].points.length - 1]);
+    svg += '<circle cx="' + sp[0].toFixed(1) + '" cy="' + sp[1].toFixed(1) + '" r="6" fill="var(--bg)" stroke="var(--mint)" stroke-width="3.5"></circle>';
+    svg += '<circle cx="' + ep[0].toFixed(1) + '" cy="' + ep[1].toFixed(1) + '" r="6" fill="var(--amber)" stroke="var(--amber)"></circle>';
+    $("overlaySvg").innerHTML = svg;
+  }
+
+  function drawCards() {
+    const list = $("routes");
+    list.innerHTML = "";
+    routes.forEach((r, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "route-card";
+      btn.setAttribute("aria-selected", i === selectedIdx ? "true" : "false");
+      const via = r.description || ("Route " + (i + 1));
+      const chip = fmtLabel(r.routeLabels);
+      btn.innerHTML =
+        '<span class="swatch" style="background:' + COLORS[i % COLORS.length] + '"></span>' +
+        '<span class="route-main"><span class="route-via">' + escapeHtml(via) + '</span>' +
+        '<span class="route-stats">' + fmtDuration(r.duration) + " · " + fmtDistance(r.distanceMeters) + '</span></span>' +
+        (chip ? '<span class="route-chip">' + chip + '</span>' : "") +
+        '<span class="route-radio"></span>';
+      btn.addEventListener("click", () => {
+        selectedIdx = i;
+        drawOverlay();
+        drawCards();
+        updateDownloadLabel();
+      });
+      list.appendChild(btn);
+    });
+  }
+
+  function updateDownloadLabel() {
+    $("downloadBtn").textContent = "Download " + currentFilename();
+  }
+
+  function currentTitle() {
+    const via = routes[selectedIdx] ? routes[selectedIdx].description : "";
+    if (destinationName && via) return destinationName + " via " + via;
+    if (destinationName) return destinationName + " Route";
+    if (via) return "Route via " + via;
+    return "GPS Route";
+  }
+
+  function currentFilename() {
+    const via = routes[selectedIdx] ? routes[selectedIdx].description : "";
+    const base = [destinationName, via].filter(Boolean).join(" via ");
+    return slugify(base) + ".gpx";
+  }
+
+  $("downloadBtn").addEventListener("click", () => {
+    if (!routes.length) return;
+    const gpx = buildGpx(routes[selectedIdx].points, currentTitle());
+    const blob = new Blob([gpx], { type: "application/gpx+xml" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = currentFilename();
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+  });
+
+  $("startBtn").addEventListener("click", () => {
+    const v = $("startInput").value.trim();
+    if (v && currentLink) processUrl(currentLink, v);
+  });
+  $("manualBtn").addEventListener("click", () => {
+    const v = firstUrl($("manualInput").value) || $("manualInput").value.trim();
+    if (v) processUrl(v);
+  });
+
+  function showDebug(info) {
+    const pre = $("debugPre");
+    pre.innerHTML = "";
+    if (info && info.expandedUrl) {
+      const a = document.createElement("a");
+      a.href = info.expandedUrl;
+      a.textContent = info.expandedUrl;
+      a.target = "_blank";
+      pre.appendChild(a);
+      pre.appendChild(document.createTextNode("\n\n"));
+    }
+    pre.appendChild(document.createTextNode(JSON.stringify(info, null, 2)));
+    $("debug").hidden = false;
+  }
+
+  /* ---------- formatting + GPX helpers ---------- */
+
+  function fmtDuration(s) {
+    const sec = parseInt(s, 10) || 0;
+    const mins = Math.round(sec / 60);
+    if (mins < 60) return mins + " min";
+    const h = Math.floor(mins / 60), mm = mins % 60;
+    return h + " h" + (mm ? " " + mm + " min" : "");
+  }
+  function fmtDistance(m) {
+    if (m >= 1000) return (m / 1000).toFixed(m >= 10000 ? 0 : 1) + " km";
+    return Math.round(m) + " m";
+  }
+  function fmtLabel(labels) {
+    if (labels.includes("FUEL_EFFICIENT")) return "Fuel efficient";
+    if (labels.includes("DEFAULT_ROUTE")) return "Recommended";
+    return "";
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  }
+  function escapeXml(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function slugify(name) {
+    const base = String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return base || "route";
+  }
+
+  function decodePolyline(str, precision) {
+    let index = 0, lat = 0, lng = 0, shift = 0, result = 0, byte = null, latChange, lngChange;
+    const coordinates = [];
+    const factor = Math.pow(10, precision || 5);
+    while (index < str.length) {
+      byte = null; shift = 0; result = 0;
+      do { byte = str.charCodeAt(index++) - 63; result |= (byte & 0x1f) << shift; shift += 5; } while (byte >= 0x20);
+      latChange = result & 1 ? ~(result >> 1) : result >> 1;
+      shift = 0; result = 0;
+      do { byte = str.charCodeAt(index++) - 63; result |= (byte & 0x1f) << shift; shift += 5; } while (byte >= 0x20);
+      lngChange = result & 1 ? ~(result >> 1) : result >> 1;
+      lat += latChange; lng += lngChange;
+      coordinates.push({ lat: lat / factor, lng: lng / factor });
+    }
+    return coordinates;
+  }
+
+  function buildGpx(points, title) {
+    const name = escapeXml(title || "GPS Route");
+    const now = new Date().toISOString();
+    const pts = points
+      .map((p) => '      <trkpt lat="' + p.lat.toFixed(6) + '" lon="' + p.lng.toFixed(6) + '"></trkpt>')
+      .join("\n");
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+'<gpx version="1.1" creator="ChooseRouteToGarmin"\n' +
+'     xmlns="http://www.topografix.com/GPX/1/1"\n' +
+'     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n' +
+'     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">\n' +
+'  <metadata>\n    <name>' + name + '</name>\n    <time>' + now + '</time>\n  </metadata>\n' +
+'  <trk>\n    <name>' + name + '</name>\n    <trkseg>\n' + pts + '\n    </trkseg>\n  </trk>\n</gpx>';
+  }
+
+  // If launched via the share sheet, the link is in the query string.
+  const params = new URLSearchParams(location.search);
+  const shared = params.get("url") || firstUrl(params.get("text")) || firstUrl(params.get("title"));
+  if (shared) processUrl(shared);
+</script>
+</body>
+</html>
