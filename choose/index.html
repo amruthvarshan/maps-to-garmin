@@ -47,7 +47,7 @@
   .rc[aria-selected="true"]{border-color:var(--mint);background:rgba(111,227,173,.10)}
   .rc .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto}
   .rc-main{min-width:0}
-  .via{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .via{font-weight:600;font-size:15px;overflow-wrap:anywhere;word-break:break-word;line-height:1.25}
   .line2{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .delta-slow{color:var(--red)} .delta-ok{color:var(--green)}
   .chip{font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#12261f;background:var(--mint);border-radius:6px;padding:2px 6px}
@@ -69,12 +69,6 @@
   button:active{transform:scale(.985)} button:disabled{opacity:.4}
   .btn-primary{background:var(--amber);color:#2a1c00} .btn-ghost{background:transparent;color:var(--mint);border:1px solid var(--line)}
   .hint{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.45}
-
-  .cmp{display:grid;gap:8px;margin-top:4px}
-  .cmp .row{display:grid;grid-template-columns:78px 1fr auto;gap:10px;align-items:center;font-size:13px}
-  .cmp .bar{height:12px;border-radius:6px;background:rgba(255,255,255,.06);overflow:hidden}
-  .cmp .fill{height:100%;border-radius:6px}
-  .cmp .val{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted)}
 
   details.debug{margin-top:12px}
   details.debug summary{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);cursor:pointer}
@@ -132,18 +126,13 @@
     </details>
   </section>
 
-  <section class="card" id="cmpCard" hidden>
-    <div class="sec-title">Compare &middot; time</div>
-    <div class="cmp" id="cmp"></div>
-  </section>
-
   <section class="card manual">
     <label for="manualInput">Test without sharing &mdash; paste a Maps link</label>
     <input id="manualInput" type="url" inputmode="url" placeholder="https://maps.app.goo.gl/&hellip;" />
     <button class="btn-ghost" id="manualBtn">Find route options</button>
   </section>
 
-  <footer>Live traffic-coloured route options &middot; breadcrumb navigation on the watch &middot; choose build v2</footer>
+  <footer>Live traffic-coloured route options &middot; breadcrumb navigation on the watch &middot; choose build v3</footer>
 </main>
 
 <script>
@@ -170,7 +159,7 @@
   function speedWord(sp){ return sp==="TRAFFIC_JAM"?"Heavy":sp==="SLOW"?"Slow":sp==="NORMAL"?"Clear":"\u2014"; }
 
   async function processUrl(mapsUrl, start){
-    ["mapWrap","trafficPanel","routes","turnsBox","actions","handoffHint","cmpCard","debug"].forEach(id=>$(id).hidden=true);
+    ["mapWrap","trafficPanel","routes","turnsBox","actions","handoffHint","debug"].forEach(id=>$(id).hidden=true);
     if(!start) $("startBox").hidden=true;
     routes=[]; scrubT=null; $("scrubOut").innerHTML="&nbsp;"; currentLink=mapsUrl;
     setStatus(start?"Finding routes from your start point\u2026":"Finding route options\u2026");
@@ -208,13 +197,13 @@
     if(!routes.length){ setStatus("No route options were returned for that link.","error"); return; }
     sel=0;
     drawAll();
-    ["mapWrap","trafficPanel","routes","actions","handoffHint","cmpCard"].forEach(id=>$(id).hidden=false);
+    ["mapWrap","trafficPanel","routes","actions","handoffHint"].forEach(id=>$(id).hidden=false);
     if(routes[sel].steps.length) $("turnsBox").hidden=false;
     setStatus(routes.length>1?routes.length+" routes found \u2014 tap one, then Download.":"1 route found \u2014 Download it below.","ok");
   }
 
   function select(i){ sel=i; scrubT=null; $("scrubOut").innerHTML="&nbsp;"; drawAll(); $("turnsBox").hidden = !routes[sel].steps.length; }
-  function drawAll(){ drawMap(); drawStrip(); drawCards(); drawTurns(); drawCompare(); updateDownloadLabel(); }
+  function drawAll(){ drawMap(); drawStrip(); drawCards(); drawTurns(); updateDownloadLabel(); }
 
   function projector(w,h,pad){
     let mnLa=Infinity,mxLa=-Infinity,mnLn=Infinity,mxLn=-Infinity;
@@ -288,14 +277,6 @@
     }).join("");
   }
 
-  function drawCompare(){
-    const max=Math.max(...routes.map(r=>parseInt(r.duration,10)||0))||1;
-    $("cmp").innerHTML=routes.map((r,i)=>{ const d=parseInt(r.duration,10)||0; const summ=trafficSummary(r);
-      return '<div class="row"><span style="color:'+(i===sel?"var(--text)":"var(--muted)")+'">'+esc(shortVia(r.description,i))+'</span>'+
-        '<span class="bar"><span class="fill" style="width:'+(d/max*100).toFixed(0)+'%;background:'+summ.color+';opacity:'+(i===sel?1:.55)+'"></span></span>'+
-        '<span class="val">'+fmtDur(r.duration)+'</span></div>'; }).join("");
-  }
-
   // scrubbing the traffic strip
   const so=$("stripOuter");
   function scrubFrom(ev){
@@ -337,7 +318,6 @@
   function fmtDist(m){ if(m>=1000) return (m/1000).toFixed(1)+" km"; return Math.round(m)+" m"; }
   function arrival(s){ const d=new Date(Date.now()+(parseInt(s,10)||0)*1000); let h=d.getHours(),mi=d.getMinutes(); const ap=h>=12?"PM":"AM"; h=h%12||12; return h+":"+(mi<10?"0":"")+mi+" "+ap; }
   function fmtLabel(l){ if(l.includes("FUEL_EFFICIENT")) return "Fuel efficient"; if(l.includes("DEFAULT_ROUTE")) return "Recommended"; return ""; }
-  function shortVia(v,i){ if(!v) return "Route "+(i+1); return v.replace(/^via /,"").split(" & ")[0].split(" ").slice(0,2).join(" "); }
   function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
   function escapeXml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
   function slugify(n){ const b=String(n||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,""); return b||"route"; }
