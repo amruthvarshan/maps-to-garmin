@@ -84,21 +84,40 @@
     font-family: "Space Mono", monospace;
     font-size: 13.5px;
     color: var(--muted);
-    margin: 0;
+    margin: 14px 0 0;
     word-break: break-word;
   }
   .status.error { color: var(--danger); }
   .status.ok { color: var(--mint); }
 
-  .meta {
-    font-family: "Space Mono", monospace;
-    font-size: 12px;
-    color: var(--muted);
-    display: flex;
-    gap: 18px;
-    margin-top: 14px;
+  .badges {
+    position: absolute; left: 10px; top: 10px;
+    display: flex; gap: 6px; flex-wrap: wrap;
   }
-  .meta span b { color: var(--text); font-weight: 700; }
+  .badge {
+    font-family: "Space Mono", monospace; font-size: 11px;
+    background: rgba(12, 35, 31, 0.82); border: 1px solid var(--line);
+    border-radius: 999px; padding: 4px 9px; color: var(--text);
+  }
+
+  .mode-head { margin: 16px 0 2px; }
+  .mode-title { font-size: 20px; font-weight: 700; color: var(--amber); letter-spacing: -0.01em; }
+  .mode-byline {
+    font-family: "Space Mono", monospace; font-size: 11.5px;
+    color: var(--muted); margin-top: 3px; line-height: 1.4;
+  }
+
+  .infocard {
+    background: rgba(0, 0, 0, 0.18); border: 1px solid var(--line);
+    border-radius: 14px; padding: 14px 16px; margin-top: 12px;
+  }
+  .ic-via { font-family: "Space Mono", monospace; font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .ic-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .ic-val { font-size: 19px; font-weight: 700; color: var(--text); }
+  .ic-lbl {
+    font-family: "Space Mono", monospace; font-size: 10.5px;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 2px;
+  }
 
   .actions { display: grid; gap: 10px; margin-top: 16px; }
   button {
@@ -189,13 +208,24 @@
     <section class="card">
       <div class="preview" id="preview" hidden>
         <svg id="routeSvg" viewBox="0 0 400 168" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
+        <div class="badges" id="badges"></div>
       </div>
+
+      <div class="mode-head" id="modeHead" hidden>
+        <div class="mode-title" id="modeTitle">Driving route</div>
+        <div class="mode-byline" id="modeByline" hidden></div>
+      </div>
+
+      <div class="infocard" id="infoCard" hidden>
+        <div class="ic-via" id="infoVia" hidden></div>
+        <div class="ic-row">
+          <div class="ic-stat"><div class="ic-val" id="infoTime">–</div><div class="ic-lbl">time</div></div>
+          <div class="ic-stat"><div class="ic-val" id="infoEta">–</div><div class="ic-lbl">arrive</div></div>
+          <div class="ic-stat"><div class="ic-val" id="infoDist">–</div><div class="ic-lbl">distance</div></div>
+        </div>
+      </div>
+
       <p class="status" id="status">Waiting for a shared link…</p>
-      <p class="hint" id="modeNote" hidden></p>
-      <div class="meta" id="meta" hidden>
-        <span>points <b id="ptCount">–</b></span>
-        <span id="distWrap" hidden>≈ <b id="dist">–</b> km</span>
-      </div>
 
       <div class="actions" id="actions" hidden>
         <button class="btn-primary" id="downloadBtn">Download .gpx</button>
@@ -220,7 +250,7 @@
       <button class="btn-ghost" id="manualBtn">Convert this link</button>
     </section>
 
-    <footer>Uses Google's recommended route · respects travel mode · breadcrumb navigation on the watch · build v8</footer>
+    <footer>Uses Google's recommended route · respects travel mode · breadcrumb navigation on the watch · build v9</footer>
   </main>
 
 <script>
@@ -253,9 +283,10 @@
   async function processUrl(mapsUrl, start) {
     $("actions").hidden = true;
     $("preview").hidden = true;
-    $("meta").hidden = true;
+    $("modeHead").hidden = true;
+    $("infoCard").hidden = true;
     $("debug").hidden = true;
-    $("modeNote").hidden = true;
+    $("handoffHint").hidden = true;
     if (!start) $("startBox").hidden = true;
     lastBlob = null;
     currentLink = mapsUrl;
@@ -288,11 +319,12 @@
       const gpx = await resp.text();
       lastBlob = new Blob([gpx], { type: "application/gpx+xml" });
       currentFilename = filenameFromResponse(resp) || "route.gpx";
-      showModeNote(resp.headers.get("X-Travel-Mode") || resp.headers.get("x-travel-mode") || "DRIVE");
+      const mode = resp.headers.get("X-Travel-Mode") || resp.headers.get("x-travel-mode") || "DRIVE";
+      const info = parseRouteInfo(resp);
 
-      const pts = drawRoute(gpx);
-      $("ptCount").textContent = pts;
-      $("meta").hidden = false;
+      drawRoute(gpx);
+      showModeHead(mode);
+      showInfoCard(info);
       $("downloadBtn").textContent = "Download " + currentFilename;
       $("actions").hidden = false;
       $("handoffHint").hidden = false;
@@ -420,11 +452,38 @@
   $("manualInput").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submitManual(); } });
 
   function modeLabel(m) { return { DRIVE: "Driving", WALK: "Walking", BICYCLE: "Cycling", TWO_WHEELER: "Two-wheeler", TRANSIT: "Transit" }[m] || "Driving"; }
-  function showModeNote(m) {
+  function showModeHead(m) {
+    $("modeTitle").textContent = modeLabel(m) + " route";
     const beta = (m === "WALK" || m === "BICYCLE" || m === "TWO_WHEELER");
-    $("modeNote").textContent = "Mode: " + modeLabel(m) + (beta ? " \u00b7 beta \u2014 paths may be imperfect; verify before relying on it." : "");
-    $("modeNote").hidden = false;
+    if (beta) {
+      $("modeByline").textContent = "Beta mode \u2014 paths may be imperfect; verify before relying on it.";
+      $("modeByline").hidden = false;
+    } else {
+      $("modeByline").hidden = true;
+    }
+    $("modeHead").hidden = false;
   }
+  function parseRouteInfo(resp) {
+    const h = resp.headers.get("X-Route-Info") || resp.headers.get("x-route-info");
+    if (!h) return {};
+    try { return JSON.parse(decodeURIComponent(h)); } catch { return {}; }
+  }
+  function showInfoCard(info) {
+    const dur = info.duration || "";
+    const dist = info.distanceMeters || 0;
+    $("infoTime").textContent = dur ? fmtDuration(dur) : "\u2014";
+    $("infoEta").textContent = dur ? arrival(dur) : "\u2014";
+    $("infoDist").textContent = dist ? (dist / 1000).toFixed(1) + " km" : "\u2014";
+    if (info.description) { $("infoVia").textContent = info.description; $("infoVia").hidden = false; }
+    else $("infoVia").hidden = true;
+    const b = [];
+    if (dist) b.push('<span class="badge">' + (dist / 1000).toFixed(1) + " km</span>");
+    if (dur) b.push('<span class="badge">' + fmtDuration(dur) + "</span>");
+    $("badges").innerHTML = b.join("");
+    $("infoCard").hidden = false;
+  }
+  function fmtDuration(s) { const m = Math.round((parseInt(s, 10) || 0) / 60); if (m < 60) return m + " min"; const h = Math.floor(m / 60), mm = m % 60; return h + " h" + (mm ? " " + mm + " min" : ""); }
+  function arrival(s) { const d = new Date(Date.now() + (parseInt(s, 10) || 0) * 1000); let h = d.getHours(), mi = d.getMinutes(); const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; return h + ":" + (mi < 10 ? "0" : "") + mi + " " + ap; }
 
   // If launched via the share sheet, the link is in the query string.
   const params = new URLSearchParams(location.search);
