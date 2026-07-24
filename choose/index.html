@@ -12,545 +12,350 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 <style>
-  :root {
-    --bg: #0c231f;
-    --surface: #10322a;
-    --line: rgba(111, 227, 173, 0.18);
-    --mint: #6fe3ad;
-    --amber: #f2b84b;
-    --text: #e8f2ee;
-    --muted: #8bab9f;
-    --danger: #f2a08b;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: var(--bg); }
-  body {
-    font-family: "Space Grotesk", system-ui, sans-serif;
-    color: var(--text);
-    min-height: 100dvh;
-    display: flex;
-    justify-content: center;
-    padding: 28px 20px calc(28px + env(safe-area-inset-bottom));
-    line-height: 1.5;
-  }
-  .wrap { width: 100%; max-width: 460px; }
+  :root{--bg:#0c231f;--surface:#10322a;--surface2:#0e2a24;--line:rgba(111,227,173,.18);
+    --mint:#6fe3ad;--amber:#f2b84b;--blue:#7db3ff;--text:#e8f2ee;--muted:#8bab9f;
+    --green:#5fd39a;--orange:#f2b84b;--red:#f2705d;--danger:#f2a08b}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg)}
+  body{font-family:"Space Grotesk",system-ui,sans-serif;color:var(--text);min-height:100dvh;
+    display:flex;justify-content:center;padding:26px 16px calc(26px + env(safe-area-inset-bottom));line-height:1.5}
+  .wrap{width:100%;max-width:480px}
+  .eyebrow{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--mint);margin:0 0 8px}
+  h1{font-size:clamp(26px,7.5vw,38px);font-weight:700;letter-spacing:-.02em;margin:0 0 6px;line-height:1.05}
+  h1 .arrow{color:var(--amber)}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 22px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:16px}
 
-  .eyebrow {
-    font-family: "Space Mono", monospace;
-    font-size: 12px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--mint);
-    margin: 0 0 10px;
-  }
-  h1 {
-    font-size: clamp(26px, 7.5vw, 38px);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin: 0 0 6px;
-    line-height: 1.05;
-  }
-  h1 .arrow { color: var(--amber); }
-  .sub { color: var(--muted); font-size: 15px; margin: 0 0 26px; }
+  .map-wrap{position:relative;border-radius:14px;overflow:hidden;background:var(--surface2)}
+  .map-wrap svg{width:100%;height:220px;display:block}
+  .badges{position:absolute;left:10px;top:10px;display:flex;gap:6px;flex-wrap:wrap}
+  .badge{font-family:"Space Mono",monospace;font-size:11px;background:rgba(12,35,31,.82);border:1px solid var(--line);border-radius:999px;padding:4px 9px;color:var(--text)}
+  .legend{position:absolute;right:10px;bottom:10px;display:flex;gap:10px;font-family:"Space Mono",monospace;font-size:10px;color:var(--muted);background:rgba(12,35,31,.72);border-radius:8px;padding:5px 8px}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:middle}
 
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    padding: 20px;
-    margin-bottom: 18px;
-  }
+  .sec-title{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:2px 0 8px}
+  .strip-outer{border-radius:7px;overflow:hidden;touch-action:none}
+  .strip-outer svg{width:100%;height:18px;display:block}
+  .scrub{font-family:"Space Mono",monospace;font-size:12px;color:var(--amber);min-height:16px;margin-top:6px}
 
-  .overlay { position: relative; }
-  .overlay svg { width: 100%; height: 176px; display: block; }
+  .status{font-family:"Space Mono",monospace;font-size:13.5px;color:var(--muted);margin:12px 0 0;word-break:break-word}
+  .status.error{color:var(--danger)} .status.ok{color:var(--mint)}
 
-  .status {
-    font-family: "Space Mono", monospace;
-    font-size: 13.5px;
-    color: var(--muted);
-    margin: 0;
-    word-break: break-word;
-  }
-  .status.error { color: var(--danger); }
-  .status.ok { color: var(--mint); }
+  .routes{display:grid;gap:10px;margin-top:14px}
+  .rc{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;
+    background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer;color:var(--text);font-family:inherit;transition:border-color .15s,background .15s}
+  .rc[aria-selected="true"]{border-color:var(--mint);background:rgba(111,227,173,.10)}
+  .rc .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto}
+  .rc-main{min-width:0}
+  .via{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .line2{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .delta-slow{color:var(--red)} .delta-ok{color:var(--green)}
+  .chip{font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#12261f;background:var(--mint);border-radius:6px;padding:2px 6px}
+  .eta{text-align:right}
+  .eta .big{font-size:18px;font-weight:700}
+  .eta .small{font-family:"Space Mono",monospace;font-size:11px;color:var(--muted)}
 
-  .routes { display: grid; gap: 10px; margin-top: 14px; }
-  .route-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    text-align: left;
-    background: rgba(0,0,0,0.18);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 12px 14px;
-    cursor: pointer;
-    color: var(--text);
-    font-family: inherit;
-    transition: border-color 0.15s ease, background 0.15s ease;
-  }
-  .route-card[aria-selected="true"] {
-    border-color: var(--mint);
-    background: rgba(111, 227, 173, 0.10);
-  }
-  .swatch { width: 12px; height: 12px; border-radius: 3px; flex: 0 0 auto; }
-  .route-main { flex: 1 1 auto; min-width: 0; }
-  .route-via {
-    font-weight: 600;
-    font-size: 15px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .route-stats {
-    font-family: "Space Mono", monospace;
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-  .route-chip {
-    font-family: "Space Mono", monospace;
-    font-size: 9.5px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #12261f;
-    background: var(--mint);
-    border-radius: 6px;
-    padding: 3px 6px;
-    flex: 0 0 auto;
-  }
-  .route-radio {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 2px solid var(--muted);
-    flex: 0 0 auto;
-  }
-  .route-card[aria-selected="true"] .route-radio {
-    border-color: var(--mint);
-    background: radial-gradient(circle at center, var(--mint) 0 5px, transparent 5.5px);
-  }
+  details.turns{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+  details.turns summary{font-family:"Space Mono",monospace;font-size:12px;color:var(--mint);cursor:pointer;list-style:none}
+  details.turns summary::-webkit-details-marker{display:none}
+  .turn{display:flex;gap:10px;padding:9px 0;border-bottom:1px dashed rgba(139,171,159,.18)}
+  .turn:last-child{border-bottom:0}
+  .turn .ic{width:26px;height:26px;border-radius:7px;background:rgba(111,227,173,.14);color:var(--mint);display:grid;place-items:center;font-size:14px;flex:0 0 auto}
+  .turn .tx{flex:1;font-size:14px}
+  .turn .tx .d{font-family:"Space Mono",monospace;font-size:11px;color:var(--muted)}
 
-  .actions { margin-top: 16px; }
-  button.btn-primary,
-  button.btn-ghost {
-    font-family: "Space Grotesk", sans-serif;
-    font-size: 16px;
-    font-weight: 600;
-    border: 0;
-    border-radius: 12px;
-    padding: 14px 16px;
-    cursor: pointer;
-    width: 100%;
-    transition: transform 0.06s ease, opacity 0.15s ease;
-  }
-  button:active { transform: scale(0.985); }
-  button:disabled { opacity: 0.4; cursor: default; }
-  .btn-primary { background: var(--amber); color: #2a1c00; }
-  .btn-ghost { background: transparent; color: var(--mint); border: 1px solid var(--line); }
+  .actions{margin-top:16px}
+  button.btn-primary,button.btn-ghost{font-family:"Space Grotesk",sans-serif;font-size:16px;font-weight:600;border:0;border-radius:12px;padding:14px 16px;cursor:pointer;width:100%;transition:transform .06s,opacity .15s}
+  button:active{transform:scale(.985)} button:disabled{opacity:.4}
+  .btn-primary{background:var(--amber);color:#2a1c00} .btn-ghost{background:transparent;color:var(--mint);border:1px solid var(--line)}
+  .hint{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.45}
 
-  .hint {
-    font-family: "Space Mono", monospace;
-    font-size: 12px;
-    color: var(--muted);
-    margin: 10px 0 0;
-    line-height: 1.45;
-  }
+  .cmp{display:grid;gap:8px;margin-top:4px}
+  .cmp .row{display:grid;grid-template-columns:78px 1fr auto;gap:10px;align-items:center;font-size:13px}
+  .cmp .bar{height:12px;border-radius:6px;background:rgba(255,255,255,.06);overflow:hidden}
+  .cmp .fill{height:100%;border-radius:6px}
+  .cmp .val{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted)}
 
-  details.debug { margin-top: 12px; }
-  details.debug summary {
-    font-family: "Space Mono", monospace;
-    font-size: 12px;
-    color: var(--muted);
-    cursor: pointer;
-  }
-  details.debug pre {
-    font-family: "Space Mono", monospace;
-    font-size: 11px;
-    color: var(--muted);
-    background: rgba(0,0,0,0.25);
-    border-radius: 10px;
-    padding: 12px;
-    overflow: auto;
-    max-height: 220px;
-  }
-  details.debug a { color: var(--mint); word-break: break-all; }
+  details.debug{margin-top:12px}
+  details.debug summary{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);cursor:pointer}
+  details.debug pre{font-family:"Space Mono",monospace;font-size:11px;color:var(--muted);background:rgba(0,0,0,.25);border-radius:10px;padding:12px;overflow:auto;max-height:220px}
+  details.debug a{color:var(--mint);word-break:break-all}
 
-  .manual label {
-    font-family: "Space Mono", monospace;
-    font-size: 11px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--muted);
-    display: block;
-    margin-bottom: 8px;
-  }
-  .manual input {
-    width: 100%;
-    font-family: "Space Mono", monospace;
-    font-size: 13px;
-    color: var(--text);
-    background: rgba(0,0,0,0.25);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 10px;
-  }
-  .manual input:focus { outline: 2px solid var(--mint); outline-offset: 0; }
-
-  footer {
-    color: var(--muted);
-    font-size: 12px;
-    font-family: "Space Mono", monospace;
-    text-align: center;
-    margin-top: 8px;
-    opacity: 0.7;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    button:active { transform: none; }
-  }
+  .manual label{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px}
+  .manual input{width:100%;font-family:"Space Mono",monospace;font-size:13px;color:var(--text);background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+  .manual input:focus{outline:2px solid var(--mint)}
+  footer{color:var(--muted);font-size:12px;font-family:"Space Mono",monospace;text-align:center;margin-top:6px;opacity:.7}
 </style>
 </head>
 <body>
-  <main class="wrap">
-    <p class="eyebrow">Route transfer · chooser</p>
-    <h1>Choose Route <span class="arrow">→</span> Garmin</h1>
-    <p class="sub">Share a route here, pick from the options, and save the one you want as a course.</p>
+<main class="wrap">
+  <p class="eyebrow">Route transfer · chooser</p>
+  <h1>Choose Route <span class="arrow">&#8594;</span> Garmin</h1>
+  <p class="sub">Share a route here to compare options with live traffic, pick one, and save it as a course.</p>
 
-    <section class="card">
-      <div class="overlay" id="overlay" hidden>
-        <svg id="overlaySvg" viewBox="0 0 400 176" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
-      </div>
-      <p class="status" id="status">Waiting for a shared link…</p>
+  <section class="card">
+    <div class="map-wrap" id="mapWrap" hidden>
+      <svg id="map" viewBox="0 0 480 220" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
+      <div class="badges" id="badges"></div>
+      <div class="legend"><span><i style="background:var(--green)"></i>clear</span><span><i style="background:var(--orange)"></i>slow</span><span><i style="background:var(--red)"></i>heavy</span></div>
+    </div>
 
-      <div class="routes" id="routes" hidden></div>
+    <div id="trafficPanel" hidden style="margin-top:14px">
+      <div class="sec-title" id="trafficTitle">Traffic along route · drag to inspect</div>
+      <div class="strip-outer" id="stripOuter"><svg id="strip" viewBox="0 0 480 18" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+      <div class="scrub" id="scrubOut">&nbsp;</div>
+    </div>
 
-      <div class="actions" id="actions" hidden>
-        <button class="btn-primary" id="downloadBtn">Download selected route</button>
-      </div>
-      <p class="hint" id="handoffHint" hidden>After it downloads, open the file and choose Garmin Connect to import it as a course.</p>
+    <p class="status" id="status">Waiting for a shared link&hellip;</p>
 
-      <div class="manual" id="startBox" hidden style="margin-top:16px">
-        <label for="startInput">Start from — address or “lat, lng”</label>
-        <input id="startInput" type="text" inputmode="text" placeholder="e.g. MG Road, Bengaluru" />
-        <button class="btn-ghost" id="startBtn">Use this start</button>
-      </div>
+    <div class="routes" id="routes" hidden></div>
 
-      <details class="debug" id="debug" hidden>
-        <summary>Diagnostics</summary>
-        <pre id="debugPre"></pre>
-      </details>
-    </section>
+    <details class="turns" id="turnsBox" hidden>
+      <summary id="turnsSummary">&#9656; Turn-by-turn for selected route</summary>
+      <div id="turns"></div>
+    </details>
 
-    <section class="card manual">
-      <label for="manualInput">Test without sharing — paste a Maps link</label>
-      <input id="manualInput" type="url" inputmode="url" placeholder="https://maps.app.goo.gl/…" />
-      <button class="btn-ghost" id="manualBtn">Find route options</button>
-    </section>
+    <div class="actions" id="actions" hidden>
+      <button class="btn-primary" id="downloadBtn">Download selected route</button>
+    </div>
+    <p class="hint" id="handoffHint" hidden>After it downloads, open the file and choose Garmin Connect to import it as a course.</p>
 
-    <footer>Shows Google's route alternatives · breadcrumb navigation on the watch · choose build v1</footer>
-  </main>
+    <div class="manual" id="startBox" hidden style="margin-top:16px">
+      <label for="startInput">Start from &mdash; address or &ldquo;lat, lng&rdquo;</label>
+      <input id="startInput" type="text" inputmode="text" placeholder="e.g. MG Road, Bengaluru" />
+      <button class="btn-ghost" id="startBtn">Use this start</button>
+    </div>
+
+    <details class="debug" id="debug" hidden>
+      <summary>Diagnostics</summary>
+      <pre id="debugPre"></pre>
+    </details>
+  </section>
+
+  <section class="card" id="cmpCard" hidden>
+    <div class="sec-title">Compare &middot; time</div>
+    <div class="cmp" id="cmp"></div>
+  </section>
+
+  <section class="card manual">
+    <label for="manualInput">Test without sharing &mdash; paste a Maps link</label>
+    <input id="manualInput" type="url" inputmode="url" placeholder="https://maps.app.goo.gl/&hellip;" />
+    <button class="btn-ghost" id="manualBtn">Find route options</button>
+  </section>
+
+  <footer>Live traffic-coloured route options &middot; breadcrumb navigation on the watch &middot; choose build v2</footer>
+</main>
 
 <script>
   // ===================================================================
-  //  EDIT THIS ONE LINE: same Cloudflare Worker URL as the other app
-  const WORKER_URL = "https://maps-to-garmin.amruthvarshan.workers.dev";
+  //  EDIT THIS ONE LINE: same Cloudflare Worker URL as the other apps
+  const WORKER_URL = "https://YOUR-WORKER-SUBDOMAIN.workers.dev";
   // ===================================================================
 
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
-  }
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 
   const $ = (id) => document.getElementById(id);
   const statusEl = $("status");
-  const COLORS = ["#6fe3ad", "#f2b84b", "#7db3ff", "#f2a08b", "#c9a6ff"];
 
-  let currentLink = null;
-  let destinationName = null;
-  let routes = [];        // [{ points:[{lat,lng}], description, distanceMeters, duration, routeLabels }]
-  let selectedIdx = 0;
+  let currentLink = null, destinationName = null, routes = [], sel = 0, scrubT = null;
 
-  function setStatus(msg, kind) {
-    statusEl.textContent = msg;
-    statusEl.className = "status" + (kind ? " " + kind : "");
-  }
+  const MANEUVER = { TURN_LEFT:"\u2190", TURN_RIGHT:"\u2192", TURN_SLIGHT_LEFT:"\u2196", TURN_SLIGHT_RIGHT:"\u2197",
+    TURN_SHARP_LEFT:"\u2190", TURN_SHARP_RIGHT:"\u2192", UTURN_LEFT:"\u21b6", UTURN_RIGHT:"\u21b7",
+    STRAIGHT:"\u2191", MERGE:"\u2934", RAMP_LEFT:"\u2196", RAMP_RIGHT:"\u2197", FORK_LEFT:"\u2196", FORK_RIGHT:"\u2197",
+    ROUNDABOUT_LEFT:"\u21ba", ROUNDABOUT_RIGHT:"\u21bb", NAME_CHANGE:"\u2191", DEPART:"\u25c9", DESTINATION:"\u25ce" };
 
-  function firstUrl(str) {
-    if (!str) return null;
-    const m = str.match(/https?:\/\/\S+/);
-    return m ? m[0] : null;
-  }
+  function setStatus(m,k){ statusEl.textContent=m; statusEl.className="status"+(k?" "+k:""); }
+  function firstUrl(s){ if(!s) return null; const m=s.match(/https?:\/\/\S+/); return m?m[0]:null; }
+  function speedColor(sp){ return sp==="TRAFFIC_JAM"?"#f2705d":sp==="SLOW"?"#f2b84b":sp==="NORMAL"?"#5fd39a":"#9fb8ad"; }
+  function speedWord(sp){ return sp==="TRAFFIC_JAM"?"Heavy":sp==="SLOW"?"Slow":sp==="NORMAL"?"Clear":"\u2014"; }
 
-  async function processUrl(mapsUrl, start) {
-    $("overlay").hidden = true;
-    $("routes").hidden = true;
-    $("actions").hidden = true;
-    $("handoffHint").hidden = true;
-    $("debug").hidden = true;
-    if (!start) $("startBox").hidden = true;
-    routes = [];
-    currentLink = mapsUrl;
-    setStatus(start ? "Finding routes from your start point…" : "Finding route options…");
-
-    if (WORKER_URL.includes("YOUR-WORKER")) {
-      setStatus("Set WORKER_URL at the top of index.html to your Worker address first.", "error");
-      return;
-    }
-
-    try {
-      let api = WORKER_URL + "/?mode=alternatives&u=" + encodeURIComponent(mapsUrl);
-      if (start) api += "&start=" + encodeURIComponent(start);
-      const resp = await fetch(api);
-      let info;
-      try { info = await resp.json(); } catch { info = null; }
-
-      if (!info) { setStatus("Unexpected response from the server.", "error"); return; }
-      if (info.needsStart) { requestStart(); return; }
-      if (info.error || !Array.isArray(info.routes)) {
-        setStatus(info.error || "Something went wrong.", "error");
-        showDebug(info);
-        return;
-      }
+  async function processUrl(mapsUrl, start){
+    ["mapWrap","trafficPanel","routes","turnsBox","actions","handoffHint","cmpCard","debug"].forEach(id=>$(id).hidden=true);
+    if(!start) $("startBox").hidden=true;
+    routes=[]; scrubT=null; $("scrubOut").innerHTML="&nbsp;"; currentLink=mapsUrl;
+    setStatus(start?"Finding routes from your start point\u2026":"Finding route options\u2026");
+    if(WORKER_URL.includes("YOUR-WORKER")){ setStatus("Set WORKER_URL at the top of index.html to your Worker address first.","error"); return; }
+    try{
+      let api=WORKER_URL+"/?mode=alternatives&traffic=1&u="+encodeURIComponent(mapsUrl);
+      if(start) api+="&start="+encodeURIComponent(start);
+      const resp=await fetch(api);
+      let info; try{ info=await resp.json(); }catch{ info=null; }
+      if(!info){ setStatus("Unexpected response from the server.","error"); return; }
+      if(info.needsStart){ requestStart(); return; }
+      if(info.error||!Array.isArray(info.routes)){ setStatus(info.error||"Something went wrong.","error"); showDebug(info); return; }
       renderResults(info);
-    } catch (e) {
-      setStatus("Network error: " + e.message, "error");
-    }
+    }catch(e){ setStatus("Network error: "+e.message,"error"); }
   }
 
-  function requestStart() {
-    if (!navigator.geolocation) {
-      setStatus("This route starts from “your location”, but this browser can't read GPS. Type a start point below.", "error");
-      $("startBox").hidden = false;
-      return;
-    }
-    setStatus("This route starts from “your location” — getting your GPS position…");
+  function requestStart(){
+    if(!navigator.geolocation){ setStatus("This route starts from \u201cyour location\u201d, but this browser can't read GPS. Type a start point below.","error"); $("startBox").hidden=false; return; }
+    setStatus("This route starts from \u201cyour location\u201d \u2014 getting your GPS position\u2026");
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const s = pos.coords.latitude.toFixed(6) + "," + pos.coords.longitude.toFixed(6);
-        processUrl(currentLink, s);
-      },
-      (err) => {
-        setStatus("Couldn't get your location (" + err.message + "). Allow location access and try again, or type a start point below.", "error");
-        $("startBox").hidden = false;
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      (p)=>processUrl(currentLink, p.coords.latitude.toFixed(6)+","+p.coords.longitude.toFixed(6)),
+      (err)=>{ setStatus("Couldn't get your location ("+err.message+"). Allow location access and try again, or type a start point below.","error"); $("startBox").hidden=false; },
+      { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
     );
   }
 
-  function renderResults(info) {
-    destinationName = info.destinationName || null;
-    routes = (info.routes || [])
-      .map((r) => ({
-        points: decodePolyline(r.encodedPolyline || ""),
-        description: r.description || "",
-        distanceMeters: r.distanceMeters || 0,
-        duration: r.duration || "",
-        routeLabels: r.routeLabels || [],
-      }))
-      .filter((r) => r.points.length >= 2);
-
-    if (!routes.length) {
-      setStatus("No route options were returned for that link.", "error");
-      return;
-    }
-
-    selectedIdx = 0;
-    drawOverlay();
-    drawCards();
-    updateDownloadLabel();
-    $("overlay").hidden = false;
-    $("routes").hidden = false;
-    $("actions").hidden = false;
-    $("handoffHint").hidden = false;
-    setStatus(
-      routes.length > 1
-        ? routes.length + " routes found — tap one, then Download."
-        : "1 route found — Download it below.",
-      "ok"
-    );
+  function renderResults(info){
+    destinationName=info.destinationName||null;
+    routes=(info.routes||[]).map(r=>{
+      const pts=decodePolyline(r.encodedPolyline||"");
+      return { points:pts, cum:cumDist(pts), description:r.description||"", distanceMeters:r.distanceMeters||0,
+        duration:r.duration||"", staticDuration:r.staticDuration||"", routeLabels:r.routeLabels||[],
+        speedIntervals:r.speedIntervals||[], steps:r.steps||[] };
+    }).filter(r=>r.points.length>=2);
+    if(!routes.length){ setStatus("No route options were returned for that link.","error"); return; }
+    sel=0;
+    drawAll();
+    ["mapWrap","trafficPanel","routes","actions","handoffHint","cmpCard"].forEach(id=>$(id).hidden=false);
+    if(routes[sel].steps.length) $("turnsBox").hidden=false;
+    setStatus(routes.length>1?routes.length+" routes found \u2014 tap one, then Download.":"1 route found \u2014 Download it below.","ok");
   }
 
-  function drawOverlay() {
-    const all = [];
-    for (const r of routes) for (const p of r.points) all.push(p);
-    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
-    for (const p of all) {
-      if (p.lat < minLat) minLat = p.lat; if (p.lat > maxLat) maxLat = p.lat;
-      if (p.lng < minLng) minLng = p.lng; if (p.lng > maxLng) maxLng = p.lng;
-    }
-    const W = 400, H = 176, pad = 20;
-    const spanLat = (maxLat - minLat) || 1e-6;
-    const spanLng = (maxLng - minLng) || 1e-6;
-    const scale = Math.min((W - 2 * pad) / spanLng, (H - 2 * pad) / spanLat);
-    const offX = (W - spanLng * scale) / 2;
-    const offY = (H - spanLat * scale) / 2;
-    const proj = (p) => [offX + (p.lng - minLng) * scale, H - (offY + (p.lat - minLat) * scale)];
+  function select(i){ sel=i; scrubT=null; $("scrubOut").innerHTML="&nbsp;"; drawAll(); $("turnsBox").hidden = !routes[sel].steps.length; }
+  function drawAll(){ drawMap(); drawStrip(); drawCards(); drawTurns(); drawCompare(); updateDownloadLabel(); }
 
-    // Draw unselected routes first, then the selected one on top.
-    const order = routes.map((_, i) => i).sort((a, b) => (a === selectedIdx ? 1 : 0) - (b === selectedIdx ? 1 : 0));
-    let svg = "";
-    for (const i of order) {
-      const proj_pts = routes[i].points.map(proj);
-      const d = proj_pts.map((q, k) => (k ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ");
-      const sel = i === selectedIdx;
-      svg += '<path d="' + d + '" fill="none" stroke="' + COLORS[i % COLORS.length] +
-        '" stroke-width="' + (sel ? 4.5 : 2.5) + '" stroke-opacity="' + (sel ? 1 : 0.4) +
-        '" stroke-linecap="round" stroke-linejoin="round"></path>';
+  function projector(w,h,pad){
+    let mnLa=Infinity,mxLa=-Infinity,mnLn=Infinity,mxLn=-Infinity;
+    routes.forEach(r=>r.points.forEach(p=>{ if(p.lat<mnLa)mnLa=p.lat;if(p.lat>mxLa)mxLa=p.lat;if(p.lng<mnLn)mnLn=p.lng;if(p.lng>mxLn)mxLn=p.lng; }));
+    const sLa=(mxLa-mnLa)||1e-6, sLn=(mxLn-mnLn)||1e-6;
+    const sc=Math.min((w-2*pad)/sLn,(h-2*pad)/sLa), ox=(w-sLn*sc)/2, oy=(h-sLa*sc)/2;
+    return p=>[ox+(p.lng-mnLn)*sc, h-(oy+(p.lat-mnLa)*sc)];
+  }
+  function segPath(pj,a,b){ let d="M"+pj[a][0].toFixed(1)+" "+pj[a][1].toFixed(1); for(let k=a+1;k<=b;k++) d+="L"+pj[k][0].toFixed(1)+" "+pj[k][1].toFixed(1); return d; }
+
+  function drawMap(){
+    const w=480,h=220,proj=projector(w,h,24);
+    let svg='<defs><pattern id="g" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M26 0H0V26" fill="none" stroke="rgba(139,171,159,.10)" stroke-width="1"/></pattern></defs>';
+    svg+='<rect width="'+w+'" height="'+h+'" fill="url(#g)"/>';
+    svg+='<circle cx="120" cy="66" r="58" fill="rgba(111,227,173,.05)"/><rect x="300" y="150" width="150" height="80" rx="18" fill="rgba(125,179,255,.06)"/>';
+    routes.forEach((r,i)=>{ if(i===sel) return; const pj=r.points.map(proj);
+      svg+='<path d="'+segPath(pj,0,pj.length-1)+'" fill="none" stroke="#9fb8ad" stroke-width="2.5" stroke-opacity=".35" stroke-linecap="round" stroke-linejoin="round"/>'; });
+    const rs=routes[sel], pj=rs.points.map(proj), N=pj.length;
+    svg+='<path d="'+segPath(pj,0,N-1)+'" fill="none" stroke="#9fb8ad" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>';
+    if(rs.speedIntervals.length){
+      rs.speedIntervals.forEach(iv=>{ const a=clampIdx(iv.startPolylinePointIndex,N), b=clampIdx(iv.endPolylinePointIndex,N);
+        if(b>a) svg+='<path d="'+segPath(pj,a,b)+'" fill="none" stroke="'+speedColor(iv.speed)+'" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>'; });
+    } else {
+      svg+='<path d="'+segPath(pj,0,N-1)+'" fill="none" stroke="var(--mint)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>';
     }
-    const sp = proj(routes[selectedIdx].points[0]);
-    const ep = proj(routes[selectedIdx].points[routes[selectedIdx].points.length - 1]);
-    svg += '<circle cx="' + sp[0].toFixed(1) + '" cy="' + sp[1].toFixed(1) + '" r="6" fill="var(--bg)" stroke="var(--mint)" stroke-width="3.5"></circle>';
-    svg += '<circle cx="' + ep[0].toFixed(1) + '" cy="' + ep[1].toFixed(1) + '" r="6" fill="var(--amber)" stroke="var(--amber)"></circle>';
-    $("overlaySvg").innerHTML = svg;
+    if(scrubT!=null){ const idx=Math.round(scrubT*(N-1)), m=pj[idx];
+      svg+='<circle cx="'+m[0].toFixed(1)+'" cy="'+m[1].toFixed(1)+'" r="7" fill="#fff" stroke="var(--amber)" stroke-width="3"/>'; }
+    const s=pj[0], e=pj[N-1];
+    svg+='<circle cx="'+s[0].toFixed(1)+'" cy="'+s[1].toFixed(1)+'" r="6.5" fill="var(--bg)" stroke="var(--mint)" stroke-width="3.5"/>';
+    svg+='<circle cx="'+e[0].toFixed(1)+'" cy="'+e[1].toFixed(1)+'" r="7" fill="var(--amber)" stroke="var(--amber)"/><circle cx="'+e[0].toFixed(1)+'" cy="'+e[1].toFixed(1)+'" r="2.5" fill="var(--bg)"/>';
+    $("map").innerHTML=svg;
+    const km=(rs.distanceMeters/1000).toFixed(1), delta=deltaMin(rs);
+    $("badges").innerHTML='<span class="badge">'+km+' km</span><span class="badge">'+fmtDur(rs.duration)+'</span>'+(delta>0?'<span class="badge">+'+delta+' min traffic</span>':'');
   }
 
-  function drawCards() {
-    const list = $("routes");
-    list.innerHTML = "";
-    routes.forEach((r, i) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "route-card";
-      btn.setAttribute("aria-selected", i === selectedIdx ? "true" : "false");
-      const via = r.description || ("Route " + (i + 1));
-      const chip = fmtLabel(r.routeLabels);
-      btn.innerHTML =
-        '<span class="swatch" style="background:' + COLORS[i % COLORS.length] + '"></span>' +
-        '<span class="route-main"><span class="route-via">' + escapeHtml(via) + '</span>' +
-        '<span class="route-stats">' + fmtDuration(r.duration) + " · " + fmtDistance(r.distanceMeters) + '</span></span>' +
-        (chip ? '<span class="route-chip">' + chip + '</span>' : "") +
-        '<span class="route-radio"></span>';
-      btn.addEventListener("click", () => {
-        selectedIdx = i;
-        drawOverlay();
-        drawCards();
-        updateDownloadLabel();
-      });
-      list.appendChild(btn);
+  function drawStrip(){
+    const rs=routes[sel], N=rs.points.length, W=480, H=18;
+    let svg='<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="rgba(159,184,173,.20)"/>';
+    if(rs.speedIntervals.length){
+      rs.speedIntervals.forEach(iv=>{ const a=clampIdx(iv.startPolylinePointIndex,N), b=clampIdx(iv.endPolylinePointIndex,N);
+        const x=(a/(N-1))*W, wSeg=Math.max(1,((b-a)/(N-1))*W);
+        svg+='<rect x="'+x.toFixed(1)+'" y="0" width="'+wSeg.toFixed(1)+'" height="'+H+'" fill="'+speedColor(iv.speed)+'"/>'; });
+      $("trafficTitle").textContent="Traffic along route \u00b7 drag to inspect";
+    } else {
+      $("trafficTitle").textContent="Traffic data unavailable for this route";
+    }
+    if(scrubT!=null){ const px=scrubT*W; svg+='<line x1="'+px.toFixed(1)+'" y1="0" x2="'+px.toFixed(1)+'" y2="'+H+'" stroke="#fff" stroke-width="2"/>'; }
+    $("strip").innerHTML=svg;
+  }
+
+  function drawCards(){
+    const list=$("routes"); list.innerHTML="";
+    routes.forEach((r,i)=>{
+      const b=document.createElement("button"); b.type="button"; b.className="rc"; b.setAttribute("aria-selected",i===sel?"true":"false");
+      const via=r.description||("Route "+(i+1));
+      const summ=trafficSummary(r), chip=fmtLabel(r.routeLabels), delta=deltaMin(r);
+      const deltaHtml = delta>0?'<span class="delta-slow">+'+delta+' min</span>':'<span class="delta-ok">on time</span>';
+      b.innerHTML='<span class="dot" style="background:'+summ.color+'"></span>'+
+        '<span class="rc-main"><span class="via">'+esc(via)+'</span><span class="line2">'+(r.distanceMeters/1000).toFixed(1)+' km \u00b7 '+deltaHtml+' \u00b7 '+summ.text+(chip?' <span class="chip">'+chip+'</span>':'')+'</span></span>'+
+        '<span class="eta"><span class="big">'+fmtDur(r.duration)+'</span><br><span class="small">arr '+arrival(r.duration)+'</span></span>';
+      b.addEventListener("click",()=>select(i));
+      list.appendChild(b);
     });
   }
 
-  function updateDownloadLabel() {
-    $("downloadBtn").textContent = "Download " + currentFilename();
+  function drawTurns(){
+    const r=routes[sel]; $("turnsSummary").textContent="\u25b8 Turn-by-turn \u00b7 "+(r.description||"selected route");
+    $("turns").innerHTML=r.steps.map(s=>{
+      const ar=MANEUVER[s.maneuver]||"\u2022"; const dist=s.distanceMeters?fmtDist(s.distanceMeters):"";
+      return '<div class="turn"><div class="ic">'+ar+'</div><div class="tx"><div>'+esc(s.instruction||"Continue")+'</div>'+(dist?'<div class="d">'+dist+'</div>':'')+'</div></div>';
+    }).join("");
   }
 
-  function currentTitle() {
-    const via = routes[selectedIdx] ? routes[selectedIdx].description : "";
-    if (destinationName && via) return destinationName + " via " + via;
-    if (destinationName) return destinationName + " Route";
-    if (via) return "Route via " + via;
-    return "GPS Route";
+  function drawCompare(){
+    const max=Math.max(...routes.map(r=>parseInt(r.duration,10)||0))||1;
+    $("cmp").innerHTML=routes.map((r,i)=>{ const d=parseInt(r.duration,10)||0; const summ=trafficSummary(r);
+      return '<div class="row"><span style="color:'+(i===sel?"var(--text)":"var(--muted)")+'">'+esc(shortVia(r.description,i))+'</span>'+
+        '<span class="bar"><span class="fill" style="width:'+(d/max*100).toFixed(0)+'%;background:'+summ.color+';opacity:'+(i===sel?1:.55)+'"></span></span>'+
+        '<span class="val">'+fmtDur(r.duration)+'</span></div>'; }).join("");
   }
 
-  function currentFilename() {
-    const via = routes[selectedIdx] ? routes[selectedIdx].description : "";
-    const base = [destinationName, via].filter(Boolean).join(" via ");
-    return slugify(base) + ".gpx";
+  // scrubbing the traffic strip
+  const so=$("stripOuter");
+  function scrubFrom(ev){
+    const rect=so.getBoundingClientRect();
+    const cx=(ev.touches?ev.touches[0].clientX:ev.clientX)-rect.left;
+    scrubT=Math.max(0,Math.min(1,cx/rect.width));
+    const r=routes[sel], N=r.points.length, idx=Math.round(scrubT*(N-1));
+    const sp=speedAt(r,idx), km=r.cum[idx].toFixed(1);
+    $("scrubOut").textContent="\u2195 "+km+" km \u00b7 "+speedWord(sp);
+    drawMap(); drawStrip();
   }
+  so.addEventListener("pointerdown",e=>{ so.setPointerCapture(e.pointerId); scrubFrom(e); });
+  so.addEventListener("pointermove",e=>{ if(e.buttons||e.pressure>0) scrubFrom(e); });
 
-  $("downloadBtn").addEventListener("click", () => {
-    if (!routes.length) return;
-    const gpx = buildGpx(routes[selectedIdx].points, currentTitle());
-    const blob = new Blob([gpx], { type: "application/gpx+xml" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = currentFilename();
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+  $("downloadBtn").addEventListener("click",()=>{
+    if(!routes.length) return;
+    const gpx=buildGpx(routes[sel].points, currentTitle());
+    const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([gpx],{type:"application/gpx+xml"})); a.download=currentFilename();
+    document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);
   });
+  $("startBtn").addEventListener("click",()=>{ const v=$("startInput").value.trim(); if(v&&currentLink) processUrl(currentLink,v); });
+  $("manualBtn").addEventListener("click",()=>{ const v=firstUrl($("manualInput").value)||$("manualInput").value.trim(); if(v) processUrl(v); });
 
-  $("startBtn").addEventListener("click", () => {
-    const v = $("startInput").value.trim();
-    if (v && currentLink) processUrl(currentLink, v);
-  });
-  $("manualBtn").addEventListener("click", () => {
-    const v = firstUrl($("manualInput").value) || $("manualInput").value.trim();
-    if (v) processUrl(v);
-  });
+  function showDebug(info){ const pre=$("debugPre"); pre.innerHTML="";
+    if(info&&info.expandedUrl){ const a=document.createElement("a"); a.href=info.expandedUrl; a.textContent=info.expandedUrl; a.target="_blank"; pre.appendChild(a); pre.appendChild(document.createTextNode("\n\n")); }
+    pre.appendChild(document.createTextNode(JSON.stringify(info,null,2))); $("debug").hidden=false; }
 
-  function showDebug(info) {
-    const pre = $("debugPre");
-    pre.innerHTML = "";
-    if (info && info.expandedUrl) {
-      const a = document.createElement("a");
-      a.href = info.expandedUrl;
-      a.textContent = info.expandedUrl;
-      a.target = "_blank";
-      pre.appendChild(a);
-      pre.appendChild(document.createTextNode("\n\n"));
-    }
-    pre.appendChild(document.createTextNode(JSON.stringify(info, null, 2)));
-    $("debug").hidden = false;
-  }
+  /* helpers */
+  function clampIdx(i,N){ i=i||0; return Math.max(0,Math.min(N-1,i)); }
+  function deltaMin(r){ const d=parseInt(r.duration,10)||0, s=parseInt(r.staticDuration,10)||0; return s?Math.round((d-s)/60):0; }
+  function speedAt(r,idx){ for(const iv of r.speedIntervals){ if(idx>=(iv.startPolylinePointIndex||0)&&idx<=(iv.endPolylinePointIndex||0)) return iv.speed; } return ""; }
+  function trafficSummary(r){ let jam=0,slow=0,tot=0; r.speedIntervals.forEach(iv=>{ const len=(iv.endPolylinePointIndex-iv.startPolylinePointIndex)||0; tot+=len; if(iv.speed==="TRAFFIC_JAM")jam+=len; else if(iv.speed==="SLOW")slow+=len; });
+    if(!tot) return {text:"traffic n/a",color:"#9fb8ad"}; const jr=jam/tot,sr=slow/tot;
+    if(jr>0.12) return {text:"heavy in parts",color:"#f2705d"}; if(sr+jr>0.25) return {text:"some slow",color:"#f2b84b"}; return {text:"mostly clear",color:"#5fd39a"}; }
+  function cumDist(pts){ const c=[0]; for(let i=1;i<pts.length;i++) c[i]=c[i-1]+hav(pts[i-1],pts[i]); return c; }
+  function hav(a,b){ const R=6371,dLa=(b.lat-a.lat)*Math.PI/180,dLn=(b.lng-a.lng)*Math.PI/180,la1=a.lat*Math.PI/180,la2=b.lat*Math.PI/180;
+    const x=Math.sin(dLa/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLn/2)**2; return 2*R*Math.asin(Math.sqrt(x)); }
+  function fmtDur(s){ const m=Math.round((parseInt(s,10)||0)/60); if(m<60) return m+" min"; const h=Math.floor(m/60),mm=m%60; return h+" h"+(mm?" "+mm+" min":""); }
+  function fmtDist(m){ if(m>=1000) return (m/1000).toFixed(1)+" km"; return Math.round(m)+" m"; }
+  function arrival(s){ const d=new Date(Date.now()+(parseInt(s,10)||0)*1000); let h=d.getHours(),mi=d.getMinutes(); const ap=h>=12?"PM":"AM"; h=h%12||12; return h+":"+(mi<10?"0":"")+mi+" "+ap; }
+  function fmtLabel(l){ if(l.includes("FUEL_EFFICIENT")) return "Fuel efficient"; if(l.includes("DEFAULT_ROUTE")) return "Recommended"; return ""; }
+  function shortVia(v,i){ if(!v) return "Route "+(i+1); return v.replace(/^via /,"").split(" & ")[0].split(" ").slice(0,2).join(" "); }
+  function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+  function escapeXml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function slugify(n){ const b=String(n||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,""); return b||"route"; }
+  function currentTitle(){ const via=routes[sel]?routes[sel].description:""; if(destinationName&&via) return destinationName+" via "+via; if(destinationName) return destinationName+" Route"; if(via) return "Route via "+via; return "GPS Route"; }
+  function currentFilename(){ const via=routes[sel]?routes[sel].description:""; return slugify([destinationName,via].filter(Boolean).join(" via "))+".gpx"; }
+  function updateDownloadLabel(){ $("downloadBtn").textContent="Download "+currentFilename(); }
 
-  /* ---------- formatting + GPX helpers ---------- */
+  function decodePolyline(str,precision){ let index=0,lat=0,lng=0,shift=0,result=0,byte=null,latChange,lngChange; const coordinates=[]; const factor=Math.pow(10,precision||5);
+    while(index<str.length){ byte=null;shift=0;result=0; do{byte=str.charCodeAt(index++)-63;result|=(byte&0x1f)<<shift;shift+=5;}while(byte>=0x20); latChange=result&1?~(result>>1):result>>1;
+      shift=0;result=0; do{byte=str.charCodeAt(index++)-63;result|=(byte&0x1f)<<shift;shift+=5;}while(byte>=0x20); lngChange=result&1?~(result>>1):result>>1; lat+=latChange;lng+=lngChange; coordinates.push({lat:lat/factor,lng:lng/factor}); }
+    return coordinates; }
+  function buildGpx(points,title){ const name=escapeXml(title||"GPS Route"); const now=new Date().toISOString();
+    const pts=points.map(p=>'      <trkpt lat="'+p.lat.toFixed(6)+'" lon="'+p.lng.toFixed(6)+'"></trkpt>').join("\n");
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="ChooseRouteToGarmin"\n     xmlns="http://www.topografix.com/GPX/1/1"\n     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">\n  <metadata>\n    <name>'+name+'</name>\n    <time>'+now+'</time>\n  </metadata>\n  <trk>\n    <name>'+name+'</name>\n    <trkseg>\n'+pts+'\n    </trkseg>\n  </trk>\n</gpx>'; }
 
-  function fmtDuration(s) {
-    const sec = parseInt(s, 10) || 0;
-    const mins = Math.round(sec / 60);
-    if (mins < 60) return mins + " min";
-    const h = Math.floor(mins / 60), mm = mins % 60;
-    return h + " h" + (mm ? " " + mm + " min" : "");
-  }
-  function fmtDistance(m) {
-    if (m >= 1000) return (m / 1000).toFixed(m >= 10000 ? 0 : 1) + " km";
-    return Math.round(m) + " m";
-  }
-  function fmtLabel(labels) {
-    if (labels.includes("FUEL_EFFICIENT")) return "Fuel efficient";
-    if (labels.includes("DEFAULT_ROUTE")) return "Recommended";
-    return "";
-  }
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  }
-  function escapeXml(s) {
-    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  }
-  function slugify(name) {
-    const base = String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-    return base || "route";
-  }
-
-  function decodePolyline(str, precision) {
-    let index = 0, lat = 0, lng = 0, shift = 0, result = 0, byte = null, latChange, lngChange;
-    const coordinates = [];
-    const factor = Math.pow(10, precision || 5);
-    while (index < str.length) {
-      byte = null; shift = 0; result = 0;
-      do { byte = str.charCodeAt(index++) - 63; result |= (byte & 0x1f) << shift; shift += 5; } while (byte >= 0x20);
-      latChange = result & 1 ? ~(result >> 1) : result >> 1;
-      shift = 0; result = 0;
-      do { byte = str.charCodeAt(index++) - 63; result |= (byte & 0x1f) << shift; shift += 5; } while (byte >= 0x20);
-      lngChange = result & 1 ? ~(result >> 1) : result >> 1;
-      lat += latChange; lng += lngChange;
-      coordinates.push({ lat: lat / factor, lng: lng / factor });
-    }
-    return coordinates;
-  }
-
-  function buildGpx(points, title) {
-    const name = escapeXml(title || "GPS Route");
-    const now = new Date().toISOString();
-    const pts = points
-      .map((p) => '      <trkpt lat="' + p.lat.toFixed(6) + '" lon="' + p.lng.toFixed(6) + '"></trkpt>')
-      .join("\n");
-    return '<?xml version="1.0" encoding="UTF-8"?>\n' +
-'<gpx version="1.1" creator="ChooseRouteToGarmin"\n' +
-'     xmlns="http://www.topografix.com/GPX/1/1"\n' +
-'     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n' +
-'     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">\n' +
-'  <metadata>\n    <name>' + name + '</name>\n    <time>' + now + '</time>\n  </metadata>\n' +
-'  <trk>\n    <name>' + name + '</name>\n    <trkseg>\n' + pts + '\n    </trkseg>\n  </trk>\n</gpx>';
-  }
-
-  // If launched via the share sheet, the link is in the query string.
-  const params = new URLSearchParams(location.search);
-  const shared = params.get("url") || firstUrl(params.get("text")) || firstUrl(params.get("title"));
-  if (shared) processUrl(shared);
+  const params=new URLSearchParams(location.search);
+  const shared=params.get("url")||firstUrl(params.get("text"))||firstUrl(params.get("title"));
+  if(shared) processUrl(shared);
 </script>
 </body>
 </html>
