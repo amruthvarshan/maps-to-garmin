@@ -132,7 +132,7 @@
     <button class="btn-ghost" id="manualBtn">Find route options</button>
   </section>
 
-  <footer>Live traffic-coloured route options &middot; area labels &middot; breadcrumb navigation on the watch &middot; choose build v6</footer>
+  <footer>Live traffic-coloured route options &middot; per-route area labels &middot; breadcrumb navigation on the watch &middot; choose build v7</footer>
 </main>
 
 <script>
@@ -146,7 +146,7 @@
   const $ = (id) => document.getElementById(id);
   const statusEl = $("status");
 
-  let currentLink = null, destinationName = null, routes = [], sel = 0, scrubT = null, placeLabels = [];
+  let currentLink = null, destinationName = null, routes = [], sel = 0, scrubT = null;
 
   const MANEUVER = { TURN_LEFT:"\u2190", TURN_RIGHT:"\u2192", TURN_SLIGHT_LEFT:"\u2196", TURN_SLIGHT_RIGHT:"\u2197",
     TURN_SHARP_LEFT:"\u2190", TURN_SHARP_RIGHT:"\u2192", UTURN_LEFT:"\u21b6", UTURN_RIGHT:"\u21b7",
@@ -161,7 +161,7 @@
   async function processUrl(mapsUrl, start){
     ["mapWrap","trafficPanel","routes","turnsBox","actions","handoffHint","debug"].forEach(id=>$(id).hidden=true);
     if(!start) $("startBox").hidden=true;
-    routes=[]; scrubT=null; placeLabels=[]; $("scrubOut").innerHTML="&nbsp;"; currentLink=mapsUrl;
+    routes=[]; scrubT=null; $("scrubOut").innerHTML="&nbsp;"; currentLink=mapsUrl;
     setStatus(start?"Finding routes from your start point\u2026":"Finding route options\u2026");
     if(WORKER_URL.includes("YOUR-WORKER")){ setStatus("Set WORKER_URL at the top of index.html to your Worker address first.","error"); return; }
     try{
@@ -188,12 +188,11 @@
 
   function renderResults(info){
     destinationName=info.destinationName||null;
-    placeLabels=Array.isArray(info.labels)?info.labels:[];
     routes=(info.routes||[]).map(r=>{
       const pts=decodePolyline(r.encodedPolyline||"");
       return { points:pts, cum:cumDist(pts), description:r.description||"", distanceMeters:r.distanceMeters||0,
         duration:r.duration||"", staticDuration:r.staticDuration||"", routeLabels:r.routeLabels||[],
-        speedIntervals:r.speedIntervals||[], steps:r.steps||[] };
+        speedIntervals:r.speedIntervals||[], steps:r.steps||[], labels:Array.isArray(r.labels)?r.labels:[] };
     }).filter(r=>r.points.length>=2);
     if(!routes.length){ setStatus("No route options were returned for that link.","error"); return; }
     sel=0;
@@ -234,7 +233,12 @@
     const s=pj[0], e=pj[N-1];
     svg+='<circle cx="'+s[0].toFixed(1)+'" cy="'+s[1].toFixed(1)+'" r="6.5" fill="var(--bg)" stroke="var(--mint)" stroke-width="3.5"/>';
     svg+='<circle cx="'+e[0].toFixed(1)+'" cy="'+e[1].toFixed(1)+'" r="7" fill="var(--amber)" stroke="var(--amber)"/><circle cx="'+e[0].toFixed(1)+'" cy="'+e[1].toFixed(1)+'" r="2.5" fill="var(--bg)"/>';
-    placeLabels.forEach(l=>{ const q=proj(l); const ty = q[1] < 16 ? q[1]+15 : q[1]-6;
+    const lbls=(routes[sel] && routes[sel].labels) || [];
+    const placed=[];
+    lbls.forEach(l=>{ const q=proj(l);
+      if(placed.some(p=>Math.hypot(p[0]-q[0],p[1]-q[1])<52)) return;
+      placed.push(q);
+      const ty = q[1] < 16 ? q[1]+15 : q[1]-6;
       svg+='<circle cx="'+q[0].toFixed(1)+'" cy="'+q[1].toFixed(1)+'" r="2.2" fill="#cfe8dd"/>';
       svg+='<text x="'+q[0].toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="10.5" font-weight="600" fill="#e8f2ee" stroke="#0c231f" stroke-width="3" paint-order="stroke" style="stroke-linejoin:round">'+esc(l.name)+'</text>'; });
     $("map").innerHTML=svg;
