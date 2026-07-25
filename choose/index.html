@@ -21,7 +21,7 @@
     display:flex;justify-content:center;padding:26px 16px calc(26px + env(safe-area-inset-bottom));line-height:1.5}
   .wrap{width:100%;max-width:480px}
   .eyebrow{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--mint);margin:0 0 8px}
-  h1{font-size:clamp(26px,7.5vw,38px);font-weight:700;letter-spacing:-.02em;margin:0 0 6px;line-height:1.05}
+  h1{font-size:clamp(26px,7.5vw,38px);font-weight:700;letter-spacing:-.02em;margin:0 0 32px;line-height:1.05}
   h1 .arrow{color:var(--amber)}
   .sub{color:var(--muted);font-size:15px;margin:0 0 22px}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:16px}
@@ -66,13 +66,14 @@
   .turn .tx .d{font-family:"Space Mono",monospace;font-size:11px;color:var(--muted)}
 
   .actions{margin-top:16px}
-  button.btn-primary,button.btn-ghost{font-family:"Space Grotesk",sans-serif;font-size:16px;font-weight:600;border:0;border-radius:12px;padding:14px 16px;cursor:pointer;width:100%;transition:transform .06s,opacity .15s}
+  button.btn-primary,button.btn-ghost{font-family:"Space Grotesk",sans-serif;font-size:16px;font-weight:600;border-radius:12px;padding:14px 16px;cursor:pointer;width:100%;transition:transform .06s,opacity .15s}
   button:active{transform:scale(.985)} button:disabled{opacity:.4}
-  .btn-primary{background:var(--amber);color:#2a1c00} .btn-ghost{background:transparent;color:var(--mint);border:1px solid var(--line)}
+  .btn-primary{background:var(--amber);color:#2a1c00;border:0} button.btn-ghost{background:transparent;color:var(--mint);border:1px solid var(--line)}
   .hint{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.45}
 
   .mode-head{margin:14px 0 2px}
-  .mode-title{font-size:20px;font-weight:700;color:var(--amber);letter-spacing:-.01em}
+  .mode-title{font-size:20px;font-weight:700;color:var(--amber);letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+  .mode-title svg{width:20px;height:20px;flex:0 0 auto}
   .mode-byline{font-family:"Space Mono",monospace;font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
 
   details.debug{margin-top:12px}
@@ -88,9 +89,8 @@
 </head>
 <body>
 <main class="wrap">
-  <p class="eyebrow">Route transfer · chooser</p>
-  <h1>Choose Route <span class="arrow">&#8594;</span> Garmin</h1>
-  <p class="sub">Share a route here to compare options with live traffic, pick one, and save it as a course.</p>
+  <p class="eyebrow">Choose Your Route</p>
+  <h1>Google Maps <span class="arrow">&#8594;</span> Garmin</h1>
 
   <section class="card">
     <div class="map-wrap" id="mapWrap" hidden>
@@ -99,13 +99,13 @@
       <div class="legend"><span><i style="background:var(--green)"></i>clear</span><span><i style="background:var(--orange)"></i>slow</span><span><i style="background:var(--red)"></i>heavy</span></div>
     </div>
 
-    <div id="trafficPanel" hidden style="margin-top:14px">
+    <div id="trafficPanel" hidden>
       <div class="sec-title" id="trafficTitle">Traffic along route · drag to inspect</div>
       <div class="strip-outer" id="stripOuter"><svg id="strip" viewBox="0 0 480 18" preserveAspectRatio="none" aria-hidden="true"></svg></div>
       <div class="scrub" id="scrubOut">&nbsp;</div>
     </div>
 
-    <p class="status" id="status">Waiting for a shared link&hellip;</p>
+    <p class="status" id="status">Waiting for a Google Maps link...</p>
     <div class="mode-head" id="modeHead" hidden>
       <div class="mode-title" id="modeTitle">Driving route</div>
       <div class="mode-byline" id="modeByline" hidden></div>
@@ -121,7 +121,7 @@
     <div class="actions" id="actions" hidden>
       <button class="btn-primary" id="downloadBtn">Download selected route</button>
     </div>
-    <p class="hint" id="handoffHint" hidden>After it downloads, open the file and choose Garmin Connect to import it as a course.</p>
+    <p class="hint" id="handoffHint" hidden>Download the .gpx file and open it with Garmin Connect.</p>
 
     <div class="manual" id="startBox" hidden style="margin-top:16px">
       <label for="startInput">Start from &mdash; address or &ldquo;lat, lng&rdquo;</label>
@@ -136,12 +136,12 @@
   </section>
 
   <section class="card manual">
-    <label for="manualInput">Test without sharing &mdash; paste a Maps link</label>
+    <label for="manualInput">Paste a Google Maps link to parse:</label>
     <input id="manualInput" type="url" inputmode="url" placeholder="https://maps.app.goo.gl/&hellip;" />
-    <button class="btn-ghost" id="manualBtn">Find route options</button>
+    <button class="btn-ghost" id="manualBtn">Find Routes</button>
   </section>
 
-  <footer>Live traffic-coloured route options &middot; travel modes &middot; per-route area labels &middot; choose build v10</footer>
+  <footer>Choose Your Route v11</footer>
 </main>
 
 <script>
@@ -157,12 +157,21 @@
 
   let currentLink = null, destinationName = null, routes = [], sel = 0, scrubT = null;
 
+  const MODE_ICON = {
+    DRIVE: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l1.3-4.5A2 2 0 0 1 8.2 7h7.6a2 2 0 0 1 1.9 1.5L19 13"/><rect x="3.5" y="13" width="17" height="4.5" rx="1.5"/><path d="M7 17.5v1.5M17 17.5v1.5"/></svg>',
+    WALK: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4.5" r="1.6"/><path d="M13 7l-1.5 4.5 2 2 1 5"/><path d="M11.5 11.5l-3.5 1.5"/><path d="M13.5 15.5l-2.5 3.5"/></svg>',
+    BICYCLE: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4.5-6.5h4"/><path d="M10.5 9.5l4 6.5"/><circle cx="15" cy="6" r="0.8"/></svg>',
+    TWO_WHEELER: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="16.5" r="3"/><circle cx="18.5" cy="16.5" r="3"/><path d="M5.5 16.5l3.5-4.5h4l2.5 4.5"/><path d="M9.5 12l-1.5-2H6"/><path d="M15 12l2-2h1.5"/></svg>',
+    TRANSIT: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="12" rx="2"/><path d="M5 11h14"/><path d="M8 16.5v1.5M16 16.5v1.5"/></svg>',
+  };
+  function modeIcon(m){ return MODE_ICON[m] || MODE_ICON.DRIVE; }
+
   const MANEUVER = { TURN_LEFT:"\u2190", TURN_RIGHT:"\u2192", TURN_SLIGHT_LEFT:"\u2196", TURN_SLIGHT_RIGHT:"\u2197",
     TURN_SHARP_LEFT:"\u2190", TURN_SHARP_RIGHT:"\u2192", UTURN_LEFT:"\u21b6", UTURN_RIGHT:"\u21b7",
     STRAIGHT:"\u2191", MERGE:"\u2934", RAMP_LEFT:"\u2196", RAMP_RIGHT:"\u2197", FORK_LEFT:"\u2196", FORK_RIGHT:"\u2197",
     ROUNDABOUT_LEFT:"\u21ba", ROUNDABOUT_RIGHT:"\u21bb", NAME_CHANGE:"\u2191", DEPART:"\u25c9", DESTINATION:"\u25ce" };
 
-  function setStatus(m,k){ statusEl.textContent=m; statusEl.className="status"+(k?" "+k:""); }
+  function setStatus(m,k){ statusEl.textContent=m; statusEl.className="status"+(k?" "+k:""); statusEl.hidden=false; }
   function firstUrl(s){ if(!s) return null; const m=s.match(/https?:\/\/\S+/); return m?m[0]:null; }
   function speedColor(sp){ return sp==="TRAFFIC_JAM"?"#f2705d":sp==="SLOW"?"#f2b84b":sp==="NORMAL"?"#5fd39a":"#9fb8ad"; }
   function speedWord(sp){ return sp==="TRAFFIC_JAM"?"Heavy":sp==="SLOW"?"Slow":sp==="NORMAL"?"Clear":"\u2014"; }
@@ -207,9 +216,9 @@
     if(!routes.length){ setStatus("No route options were returned for that link.","error"); return; }
     sel=0;
     drawAll();
-    ["mapWrap","trafficPanel","routes","actions","handoffHint"].forEach(id=>$(id).hidden=false);
+    ["mapWrap","routes","actions","handoffHint"].forEach(id=>$(id).hidden=false);
     if(routes[sel].steps.length) $("turnsBox").hidden=false;
-    setStatus(routes.length>1?routes.length+" routes found \u2014 tap one, then Download.":"1 route found \u2014 Download it below.","ok");
+    $("status").hidden=true;
   }
 
   function select(i){ sel=i; scrubT=null; $("scrubOut").innerHTML="&nbsp;"; drawAll(); $("turnsBox").hidden = !routes[sel].steps.length; }
@@ -272,7 +281,10 @@
   }
 
   function drawCards(){
-    const list=$("routes"); list.innerHTML="";
+    const list=$("routes"), panel=$("trafficPanel");
+    if(panel.parentNode) panel.parentNode.removeChild(panel); // detach so clearing the list won't destroy it (and its scrub listeners)
+    list.innerHTML="";
+    let selCard=null;
     routes.forEach((r,i)=>{
       const b=document.createElement("button"); b.type="button"; b.className="rc"; b.setAttribute("aria-selected",i===sel?"true":"false");
       const via=r.description||("Route "+(i+1));
@@ -282,8 +294,10 @@
         '<span class="rc-main"><span class="via">'+esc(via)+'</span><span class="line2">'+(r.distanceMeters/1000).toFixed(1)+' km \u00b7 '+deltaHtml+' \u00b7 '+summ.text+(chip?' <span class="chip">'+chip+'</span>':'')+'</span></span>'+
         '<span class="eta"><span class="big">'+fmtDur(r.duration)+'</span><br><span class="small">arr '+arrival(r.duration)+'</span></span>';
       b.addEventListener("click",()=>select(i));
+      if(i===sel) selCard=b;
       list.appendChild(b);
     });
+    if(selCard){ selCard.insertAdjacentElement("afterend", panel); panel.hidden=false; }
   }
 
   function drawTurns(){
@@ -323,9 +337,9 @@
 
   function modeLabel(m){ return {DRIVE:"Driving",WALK:"Walking",BICYCLE:"Cycling",TWO_WHEELER:"Two-wheeler",TRANSIT:"Transit"}[m]||"Driving"; }
   function showModeHead(m){
-    $("modeTitle").textContent = modeLabel(m)+" route";
+    $("modeTitle").innerHTML = modeIcon(m) + "<span>" + modeLabel(m) + "</span>";
     const beta = (m==="WALK"||m==="BICYCLE"||m==="TWO_WHEELER");
-    if(beta){ $("modeByline").textContent = "Beta mode \u2014 paths may be imperfect; verify before relying on it."; $("modeByline").hidden=false; }
+    if(beta){ $("modeByline").textContent = "Beta. Verify paths."; $("modeByline").hidden=false; }
     else $("modeByline").hidden=true;
     $("modeHead").hidden = false;
   }
