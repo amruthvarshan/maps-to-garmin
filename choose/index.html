@@ -21,15 +21,15 @@
   body{font-family:"Space Grotesk",system-ui,sans-serif;color:var(--text);height:100dvh;overflow:hidden;
     display:flex;justify-content:center;line-height:1.5}
   .wrap{width:100%;max-width:480px;height:100dvh;display:flex;flex-direction:column;padding:0 16px}
-  .app-header{flex:0 0 auto;padding:24px 0 16px;border-bottom:1px solid var(--line);position:relative;z-index:1;box-shadow:0 10px 18px -12px rgba(0,0,0,.6)}
-  .app-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:18px 0 calc(24px + env(safe-area-inset-bottom))}
-  .eyebrow{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--mint);margin:0 0 8px}
-  h1{font-size:clamp(26px,7.5vw,38px);font-weight:700;letter-spacing:-.02em;margin:0 0 16px;line-height:1.05}
+  .app-header{flex:0 0 auto;padding:16px 0 12px;border-bottom:1px solid var(--line);position:relative;z-index:1;box-shadow:0 10px 18px -12px rgba(0,0,0,.6)}
+  .app-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:14px 0 calc(24px + env(safe-area-inset-bottom))}
+  .eyebrow{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--mint);margin:0 0 6px}
+  h1{font-size:clamp(26px,7.5vw,38px);font-weight:700;letter-spacing:-.02em;margin:0 0 12px;line-height:1.05}
   h1 .arrow{color:var(--amber)}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:16px}
 
   .map-wrap{position:relative;border-radius:14px;overflow:hidden;background:var(--surface2)}
-  .map-wrap svg{width:100%;height:220px;display:block}
+  .map-wrap svg{width:100%;height:170px;display:block}
   .badges{position:absolute;left:10px;top:10px;display:flex;gap:6px;flex-wrap:wrap}
   .badge{font-family:"Space Mono",monospace;font-size:11px;background:rgba(12,35,31,.82);border:1px solid var(--line);border-radius:999px;padding:4px 9px;color:var(--text)}
   .legend{position:absolute;right:10px;bottom:10px;display:flex;gap:10px;font-family:"Space Mono",monospace;font-size:10px;color:var(--muted);background:rgba(12,35,31,.72);border-radius:8px;padding:5px 8px}
@@ -73,11 +73,11 @@
   .btn-primary{background:var(--amber);color:#2a1c00;border:0} button.btn-ghost{background:transparent;color:var(--mint);border:1px solid var(--line)}
   .dl-note{font-family:"Space Mono",monospace;font-size:13.5px;color:var(--mint);margin:14px 0 0;line-height:1.45}
 
-  .mode-head{margin:14px 0 2px}
+  .mode-head{margin:0 0 12px}
   .mode-title{font-size:20px;font-weight:700;color:var(--amber);letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
   .mode-title svg{width:20px;height:20px;flex:0 0 auto}
   .mode-byline{font-family:"Space Mono",monospace;font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
-  .modes{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+  .modes{display:flex;gap:8px;margin:12px 0 0;flex-wrap:wrap}
   .mode-chip{width:54px;height:44px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.18);color:var(--muted);cursor:pointer;transition:border-color .15s,color .15s,background .15s}
   .mode-chip svg{width:20px;height:20px;flex:0 0 auto}
   .mode-chip[aria-selected="true"]{border-color:var(--amber);color:var(--amber);background:rgba(242,184,75,.10)}
@@ -100,20 +100,20 @@
     <h1>Google Maps <span class="arrow">&#8594;</span> Garmin</h1>
 
     <div class="map-wrap" id="mapWrap" hidden>
-      <svg id="map" viewBox="0 0 480 220" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
+      <svg id="map" viewBox="0 0 480 170" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
       <div class="badges" id="badges"></div>
       <div class="legend"><span><i style="background:var(--green)"></i>clear</span><span><i style="background:var(--orange)"></i>slow</span><span><i style="background:var(--red)"></i>heavy</span></div>
     </div>
 
     <div class="modes" id="modes" hidden></div>
-    <div class="mode-head" id="modeHead" hidden>
-      <div class="mode-title" id="modeTitle">Driving route</div>
-      <div class="mode-byline" id="modeByline" hidden></div>
-    </div>
   </header>
 
   <div class="app-scroll">
     <section class="card">
+      <div class="mode-head" id="modeHead" hidden>
+        <div class="mode-title" id="modeTitle">Driving route</div>
+        <div class="mode-byline" id="modeByline" hidden></div>
+      </div>
       <p class="status" id="status">Waiting for a Google Maps link...</p>
 
       <div id="trafficPanel" hidden>
@@ -152,7 +152,7 @@
       <button class="btn-ghost" id="manualBtn">Find Routes</button>
     </section>
 
-    <footer>Choose Your Route v1.1</footer>
+    <footer>Choose Your Route v1.0</footer>
   </div>
 </main>
 
@@ -249,7 +249,7 @@
   function segPath(pj,a,b){ let d="M"+pj[a][0].toFixed(1)+" "+pj[a][1].toFixed(1); for(let k=a+1;k<=b;k++) d+="L"+pj[k][0].toFixed(1)+" "+pj[k][1].toFixed(1); return d; }
 
   function drawMap(){
-    const w=480,h=220,proj=projector(w,h,24);
+    const w=480,h=170,proj=projector(w,h,24);
     let svg='<defs><pattern id="g" width="26" height="26" patternUnits="userSpaceOnUse"><path d="M26 0H0V26" fill="none" stroke="rgba(139,171,159,.10)" stroke-width="1"/></pattern></defs>';
     svg+='<rect width="'+w+'" height="'+h+'" fill="url(#g)"/>';
     routes.forEach((r,i)=>{ if(i===sel) return; const pj=r.points.map(proj);
