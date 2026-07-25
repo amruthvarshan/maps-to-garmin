@@ -143,6 +143,15 @@
     line-height: 1.45;
   }
 
+  details.turns { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+  details.turns summary { font-family: "Space Mono", monospace; font-size: 12px; color: var(--mint); cursor: pointer; list-style: none; }
+  details.turns summary::-webkit-details-marker { display: none; }
+  .turn { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px dashed rgba(139,171,159,.18); }
+  .turn:last-child { border-bottom: 0; }
+  .turn .ic { width: 26px; height: 26px; border-radius: 7px; background: rgba(111,227,173,.14); color: var(--mint); display: grid; place-items: center; font-size: 14px; flex: 0 0 auto; }
+  .turn .tx { flex: 1; font-size: 14px; }
+  .turn .tx .d { font-family: "Space Mono", monospace; font-size: 11px; color: var(--muted); }
+
   details.debug { margin-top: 12px; }
   details.debug summary {
     font-family: "Space Mono", monospace;
@@ -225,6 +234,11 @@
         </div>
       </div>
 
+      <details class="turns" id="turnsBox" hidden>
+        <summary id="turnsSummary">&#9656; Turn-by-turn</summary>
+        <div id="turns"></div>
+      </details>
+
       <p class="status" id="status">Waiting for a shared link…</p>
 
       <div class="actions" id="actions" hidden>
@@ -250,7 +264,7 @@
       <button class="btn-ghost" id="manualBtn">Convert this link</button>
     </section>
 
-    <footer>Uses Google's recommended route · respects travel mode · breadcrumb navigation on the watch · build v9</footer>
+    <footer>Uses Google's recommended route · respects travel mode · turn-by-turn · build v10</footer>
   </main>
 
 <script>
@@ -285,6 +299,7 @@
     $("preview").hidden = true;
     $("modeHead").hidden = true;
     $("infoCard").hidden = true;
+    $("turnsBox").hidden = true;
     $("debug").hidden = true;
     $("handoffHint").hidden = true;
     if (!start) $("startBox").hidden = true;
@@ -325,6 +340,7 @@
       drawRoute(gpx);
       showModeHead(mode);
       showInfoCard(info);
+      drawTurns(info.steps, info.description);
       $("downloadBtn").textContent = "Download " + currentFilename;
       $("actions").hidden = false;
       $("handoffHint").hidden = false;
@@ -484,6 +500,22 @@
   }
   function fmtDuration(s) { const m = Math.round((parseInt(s, 10) || 0) / 60); if (m < 60) return m + " min"; const h = Math.floor(m / 60), mm = m % 60; return h + " h" + (mm ? " " + mm + " min" : ""); }
   function arrival(s) { const d = new Date(Date.now() + (parseInt(s, 10) || 0) * 1000); let h = d.getHours(), mi = d.getMinutes(); const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; return h + ":" + (mi < 10 ? "0" : "") + mi + " " + ap; }
+  function fmtDist(m) { if (m >= 1000) return (m / 1000).toFixed(1) + " km"; return Math.round(m) + " m"; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+  const MANEUVER = { TURN_LEFT: "\u2190", TURN_RIGHT: "\u2192", TURN_SLIGHT_LEFT: "\u2196", TURN_SLIGHT_RIGHT: "\u2197",
+    TURN_SHARP_LEFT: "\u2190", TURN_SHARP_RIGHT: "\u2192", UTURN_LEFT: "\u21b6", UTURN_RIGHT: "\u21b7",
+    STRAIGHT: "\u2191", MERGE: "\u2934", RAMP_LEFT: "\u2196", RAMP_RIGHT: "\u2197", FORK_LEFT: "\u2196", FORK_RIGHT: "\u2197",
+    ROUNDABOUT_LEFT: "\u21ba", ROUNDABOUT_RIGHT: "\u21bb", NAME_CHANGE: "\u2191", DEPART: "\u25c9", DESTINATION: "\u25ce" };
+  function drawTurns(steps, via) {
+    const list = Array.isArray(steps) ? steps : [];
+    $("turnsSummary").textContent = "\u25b8 Turn-by-turn" + (via ? " \u00b7 " + via : "");
+    $("turns").innerHTML = list.map((s) => {
+      const ar = MANEUVER[s.maneuver] || "\u2022";
+      const dist = s.distanceMeters ? fmtDist(s.distanceMeters) : "";
+      return '<div class="turn"><div class="ic">' + ar + '</div><div class="tx"><div>' + esc(s.instruction || "Continue") + "</div>" + (dist ? '<div class="d">' + dist + "</div>" : "") + "</div></div>";
+    }).join("");
+    $("turnsBox").hidden = list.length === 0;
+  }
 
   // If launched via the share sheet, the link is in the query string.
   const params = new URLSearchParams(location.search);
