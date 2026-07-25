@@ -76,6 +76,10 @@
   .mode-title{font-size:20px;font-weight:700;color:var(--amber);letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
   .mode-title svg{width:20px;height:20px;flex:0 0 auto}
   .mode-byline{font-family:"Space Mono",monospace;font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+  .modes{display:flex;gap:8px;margin:12px 0 0;flex-wrap:wrap}
+  .mode-chip{display:flex;align-items:center;gap:6px;padding:7px 11px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.18);color:var(--muted);cursor:pointer;font-family:"Space Grotesk",sans-serif;font-size:13px;font-weight:600;transition:border-color .15s,color .15s,background .15s}
+  .mode-chip svg{width:16px;height:16px;flex:0 0 auto}
+  .mode-chip[aria-selected="true"]{border-color:var(--amber);color:var(--amber);background:rgba(242,184,75,.10)}
 
   details.debug{margin-top:12px}
   details.debug summary{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);cursor:pointer}
@@ -111,6 +115,7 @@
       <div class="mode-title" id="modeTitle">Driving route</div>
       <div class="mode-byline" id="modeByline" hidden></div>
     </div>
+    <div class="modes" id="modes" hidden></div>
 
     <div class="routes" id="routes" hidden></div>
 
@@ -142,7 +147,7 @@
     <button class="btn-ghost" id="manualBtn">Find Routes</button>
   </section>
 
-  <footer>Choose Your Route v13</footer>
+  <footer>Choose Your Route v14</footer>
 </main>
 
 <script>
@@ -157,6 +162,7 @@
   const statusEl = $("status");
 
   let currentLink = null, destinationName = null, routes = [], sel = 0, scrubT = null;
+  let forcedMode = null, lastStart = null, activeMode = "DRIVE";
 
   const MODE_ICON = {
     DRIVE: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l1.3-4.5A2 2 0 0 1 8.2 7h7.6a2 2 0 0 1 1.9 1.5L19 13"/><rect x="3.5" y="13" width="17" height="4.5" rx="1.5"/><path d="M7 17.5v1.5M17 17.5v1.5"/></svg>',
@@ -178,14 +184,15 @@
   function speedWord(sp){ return sp==="TRAFFIC_JAM"?"Heavy":sp==="SLOW"?"Slow":sp==="NORMAL"?"Clear":"\u2014"; }
 
   async function processUrl(mapsUrl, start){
-    ["mapWrap","trafficPanel","routes","turnsBox","actions","handoffHint","debug","modeHead"].forEach(id=>$(id).hidden=true);
+    ["mapWrap","trafficPanel","routes","turnsBox","actions","handoffHint","debug","modeHead","modes"].forEach(id=>$(id).hidden=true);
     if(!start) $("startBox").hidden=true;
-    routes=[]; scrubT=null; $("scrubOut").innerHTML="&nbsp;"; currentLink=mapsUrl;
+    routes=[]; scrubT=null; lastStart=start||null; $("scrubOut").innerHTML="&nbsp;"; currentLink=mapsUrl;
     setStatus(start?"Finding routes from your start point\u2026":"Finding route options\u2026");
     if(WORKER_URL.includes("YOUR-WORKER")){ setStatus("Set WORKER_URL at the top of index.html to your Worker address first.","error"); return; }
     try{
       let api=WORKER_URL+"/?mode=alternatives&traffic=1&merge=1&labels=1&u="+encodeURIComponent(mapsUrl);
       if(start) api+="&start="+encodeURIComponent(start);
+      if(forcedMode) api+="&tmode="+encodeURIComponent(forcedMode);
       const resp=await fetch(api);
       let info; try{ info=await resp.json(); }catch{ info=null; }
       if(!info){ setStatus("Unexpected response from the server.","error"); return; }
@@ -208,6 +215,7 @@
   function renderResults(info){
     destinationName=info.destinationName||null;
     showModeHead(info.travelMode||"DRIVE");
+    renderModes(info.travelMode||"DRIVE");
     routes=(info.routes||[]).map(r=>{
       const pts=decodePolyline(r.encodedPolyline||"");
       return { points:pts, cum:cumDist(pts), description:r.description||"", distanceMeters:r.distanceMeters||0,
@@ -331,7 +339,7 @@
     document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);
   });
   function submitStart(){ const v=$("startInput").value.trim(); if(v&&currentLink) processUrl(currentLink,v); }
-  function submitManual(){ const v=firstUrl($("manualInput").value)||$("manualInput").value.trim(); if(v) processUrl(v); }
+  function submitManual(){ const v=firstUrl($("manualInput").value)||$("manualInput").value.trim(); if(v){ forcedMode=null; processUrl(v); } }
   $("startBtn").addEventListener("click", submitStart);
   $("manualBtn").addEventListener("click", submitManual);
   $("startInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); submitStart(); } });
@@ -345,6 +353,14 @@
     else $("modeByline").hidden=true;
     $("modeHead").hidden = false;
   }
+  const MODE_LIST=[["DRIVE","Drive"],["WALK","Walk"],["BICYCLE","Cycle"],["TWO_WHEELER","Two-wheeler"]];
+  function renderModes(active){
+    activeMode=active;
+    $("modes").innerHTML=MODE_LIST.map(function(p){ return '<button type="button" class="mode-chip" data-mode="'+p[0]+'" aria-selected="'+(p[0]===active?"true":"false")+'">'+modeIcon(p[0])+'<span>'+p[1]+'</span></button>'; }).join("");
+    $("modes").querySelectorAll(".mode-chip").forEach(function(btn){ btn.addEventListener("click",function(){ refetchMode(btn.dataset.mode); }); });
+    $("modes").hidden=false;
+  }
+  function refetchMode(m){ if(m===activeMode||!currentLink) return; forcedMode=m; processUrl(currentLink,lastStart); }
 
   function showDebug(info){ const pre=$("debugPre"); pre.innerHTML="";
     if(info&&info.expandedUrl){ const a=document.createElement("a"); a.href=info.expandedUrl; a.textContent=info.expandedUrl; a.target="_blank"; pre.appendChild(a); pre.appendChild(document.createTextNode("\n\n")); }
