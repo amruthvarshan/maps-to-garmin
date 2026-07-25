@@ -108,6 +108,10 @@
     font-family: "Space Mono", monospace; font-size: 11.5px;
     color: var(--muted); margin-top: 3px; line-height: 1.4;
   }
+  .modes { display: flex; gap: 8px; margin: 12px 0 0; flex-wrap: wrap; }
+  .mode-chip { display: flex; align-items: center; gap: 6px; padding: 7px 11px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,0.18); color: var(--muted); cursor: pointer; font-family: "Space Grotesk", sans-serif; font-size: 13px; font-weight: 600; width: auto; transition: border-color .15s, color .15s, background .15s; }
+  .mode-chip svg { width: 16px; height: 16px; flex: 0 0 auto; }
+  .mode-chip[aria-selected="true"] { border-color: var(--amber); color: var(--amber); background: rgba(242,184,75,0.10); }
 
   .infocard {
     background: rgba(0, 0, 0, 0.18); border: 1px solid var(--line);
@@ -227,6 +231,7 @@
         <div class="mode-title" id="modeTitle">Driving route</div>
         <div class="mode-byline" id="modeByline" hidden></div>
       </div>
+      <div class="modes" id="modes" hidden></div>
 
       <div class="infocard" id="infoCard" hidden>
         <div class="ic-via" id="infoVia" hidden></div>
@@ -267,7 +272,7 @@
       <button class="btn-ghost" id="manualBtn">Generate GPX</button>
     </section>
 
-    <footer>Recommended Route v16</footer>
+    <footer>Recommended Route v17</footer>
   </main>
 
 <script>
@@ -285,6 +290,7 @@
   let lastBlob = null;
   let currentLink = null;
   let currentFilename = "route.gpx";
+  let forcedMode = null, lastStart = null, activeMode = "DRIVE";
 
   function setStatus(msg, kind) {
     statusEl.textContent = msg;
@@ -306,8 +312,10 @@
     $("turnsBox").hidden = true;
     $("debug").hidden = true;
     $("downloadHint").hidden = true;
+    $("modes").hidden = true;
     if (!start) $("startBox").hidden = true;
     lastBlob = null;
+    lastStart = start || null;
     currentLink = mapsUrl;
     setStatus(start ? "Building the route from your start point…" : "Reading the route…");
 
@@ -319,6 +327,7 @@
     try {
       let api = WORKER_URL + "/?u=" + encodeURIComponent(mapsUrl);
       if (start) api += "&start=" + encodeURIComponent(start);
+      if (forcedMode) api += "&tmode=" + encodeURIComponent(forcedMode);
       const resp = await fetch(api);
       const ct = resp.headers.get("content-type") || "";
 
@@ -343,6 +352,7 @@
 
       drawRoute(gpx);
       showModeHead(mode);
+      renderModes(mode);
       showInfoCard(info);
       drawTurns(info.steps, info.description);
       $("downloadBtn").textContent = "Download " + currentFilename;
@@ -463,7 +473,7 @@
   }
   function submitManual() {
     const v = firstUrl($("manualInput").value) || $("manualInput").value.trim();
-    if (v) processUrl(v);
+    if (v) { forcedMode = null; processUrl(v); }
   }
   $("downloadBtn").addEventListener("click", triggerDownload);
   $("startBtn").addEventListener("click", submitStart);
@@ -491,6 +501,18 @@
     }
     $("modeHead").hidden = false;
   }
+  const MODE_LIST = [["DRIVE", "Drive"], ["WALK", "Walk"], ["BICYCLE", "Cycle"], ["TWO_WHEELER", "Two-wheeler"]];
+  function renderModes(active) {
+    activeMode = active;
+    $("modes").innerHTML = MODE_LIST.map(function (p) {
+      return '<button type="button" class="mode-chip" data-mode="' + p[0] + '" aria-selected="' + (p[0] === active ? "true" : "false") + '">' + modeIcon(p[0]) + "<span>" + p[1] + "</span></button>";
+    }).join("");
+    $("modes").querySelectorAll(".mode-chip").forEach(function (btn) {
+      btn.addEventListener("click", function () { refetchMode(btn.dataset.mode); });
+    });
+    $("modes").hidden = false;
+  }
+  function refetchMode(m) { if (m === activeMode || !currentLink) return; forcedMode = m; processUrl(currentLink, lastStart); }
   function parseRouteInfo(resp) {
     const h = resp.headers.get("X-Route-Info") || resp.headers.get("x-route-info");
     if (!h) return {};
