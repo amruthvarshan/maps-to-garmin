@@ -70,6 +70,7 @@
   button:active{transform:scale(.985)} button:disabled{opacity:.4}
   .btn-primary{background:var(--amber);color:#2a1c00;border:0} button.btn-ghost{background:transparent;color:var(--mint);border:1px solid var(--line)}
   .hint{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.45}
+  .dl-note{font-family:"Space Mono",monospace;font-size:13.5px;color:var(--mint);margin:14px 0 0;line-height:1.45}
 
   .mode-head{margin:14px 0 2px}
   .mode-title{font-size:20px;font-weight:700;color:var(--amber);letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
@@ -121,7 +122,7 @@
     <div class="actions" id="actions" hidden>
       <button class="btn-primary" id="downloadBtn">Download selected route</button>
     </div>
-    <p class="hint" id="handoffHint" hidden>Download the .gpx file and open it with Garmin Connect.</p>
+    <p class="dl-note" id="handoffHint" hidden>Download the .gpx file and open it with Garmin Connect.</p>
 
     <div class="manual" id="startBox" hidden style="margin-top:16px">
       <label for="startInput">Start from &mdash; address or &ldquo;lat, lng&rdquo;</label>
@@ -141,7 +142,7 @@
     <button class="btn-ghost" id="manualBtn">Find Routes</button>
   </section>
 
-  <footer>Choose Your Route v12</footer>
+  <footer>Choose Your Route v13</footer>
 </main>
 
 <script>
@@ -159,7 +160,7 @@
 
   const MODE_ICON = {
     DRIVE: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l1.3-4.5A2 2 0 0 1 8.2 7h7.6a2 2 0 0 1 1.9 1.5L19 13"/><rect x="3.5" y="13" width="17" height="4.5" rx="1.5"/><path d="M7 17.5v1.5M17 17.5v1.5"/></svg>',
-    WALK: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4.5" r="1.6"/><path d="M13 7l-1.5 4.5 2 2 1 5"/><path d="M11.5 11.5l-3.5 1.5"/><path d="M13.5 15.5l-2.5 3.5"/></svg>',
+    WALK: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="1.7"/><path d="M7 21l3-4"/><path d="M16 21l-2-4l-3-3l1-6"/><path d="M6 12l2-3l4-1l3 3l3 1"/></svg>',
     BICYCLE: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4.5-6.5h4"/><path d="M10.5 9.5l4 6.5"/><circle cx="15" cy="6" r="0.8"/></svg>',
     TWO_WHEELER: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="16.5" r="3"/><circle cx="18.5" cy="16.5" r="3"/><path d="M5.5 16.5l3.5-4.5h4l2.5 4.5"/><path d="M9.5 12l-1.5-2H6"/><path d="M15 12l2-2h1.5"/></svg>',
     TRANSIT: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="12" rx="2"/><path d="M5 11h14"/><path d="M8 16.5v1.5M16 16.5v1.5"/></svg>',
@@ -272,10 +273,8 @@
       rs.speedIntervals.forEach(iv=>{ const a=clampIdx(iv.startPolylinePointIndex,N), b=clampIdx(iv.endPolylinePointIndex,N);
         const x=(a/(N-1))*W, wSeg=Math.max(1,((b-a)/(N-1))*W);
         svg+='<rect x="'+x.toFixed(1)+'" y="0" width="'+wSeg.toFixed(1)+'" height="'+H+'" fill="'+speedColor(iv.speed)+'"/>'; });
-      $("trafficTitle").textContent="Traffic along route \u00b7 drag to inspect";
-    } else {
-      $("trafficTitle").textContent="Traffic data unavailable for this route";
     }
+    $("trafficTitle").textContent="Drag along the route";
     if(scrubT!=null){ const px=scrubT*W; svg+='<line x1="'+px.toFixed(1)+'" y1="0" x2="'+px.toFixed(1)+'" y2="'+H+'" stroke="#fff" stroke-width="2"/>'; }
     $("strip").innerHTML=svg;
   }
@@ -289,9 +288,12 @@
       const b=document.createElement("button"); b.type="button"; b.className="rc"; b.setAttribute("aria-selected",i===sel?"true":"false");
       const via=r.description||("Route "+(i+1));
       const summ=trafficSummary(r), chip=fmtLabel(r.routeLabels), delta=deltaMin(r);
-      const deltaHtml = delta>0?'<span class="delta-slow">+'+delta+' min</span>':'<span class="delta-ok">on time</span>';
+      const hasTraffic = r.speedIntervals.length > 0;
+      const parts = [(r.distanceMeters/1000).toFixed(1)+' km'];
+      if(hasTraffic){ parts.push(delta>0?'<span class="delta-slow">+'+delta+' min</span>':'<span class="delta-ok">on time</span>'); parts.push(summ.text); }
+      if(chip) parts.push('<span class="chip">'+chip+'</span>');
       b.innerHTML='<span class="dot" style="background:'+summ.color+'"></span>'+
-        '<span class="rc-main"><span class="via">'+esc(via)+'</span><span class="line2">'+(r.distanceMeters/1000).toFixed(1)+' km \u00b7 '+deltaHtml+' \u00b7 '+summ.text+(chip?' <span class="chip">'+chip+'</span>':'')+'</span></span>'+
+        '<span class="rc-main"><span class="via">'+esc(via)+'</span><span class="line2">'+parts.join(' \u00b7 ')+'</span></span>'+
         '<span class="eta"><span class="big">'+fmtDur(r.duration)+'</span><br><span class="small">arr '+arrival(r.duration)+'</span></span>';
       b.addEventListener("click",()=>select(i));
       if(i===sel) selCard=b;
