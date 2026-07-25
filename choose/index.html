@@ -16,6 +16,7 @@
     --mint:#6fe3ad;--amber:#f2b84b;--blue:#7db3ff;--text:#e8f2ee;--muted:#8bab9f;
     --green:#5fd39a;--orange:#f2b84b;--red:#f2705d;--danger:#f2a08b}
   *{box-sizing:border-box}
+  [hidden]{display:none !important}
   html,body{margin:0;background:var(--bg)}
   body{font-family:"Space Grotesk",system-ui,sans-serif;color:var(--text);min-height:100dvh;
     display:flex;justify-content:center;padding:26px 16px calc(26px + env(safe-area-inset-bottom));line-height:1.5}
@@ -147,7 +148,7 @@
     <button class="btn-ghost" id="manualBtn">Find Routes</button>
   </section>
 
-  <footer>Choose Your Route v15</footer>
+  <footer>Choose Your Route v16</footer>
 </main>
 
 <script>
@@ -184,7 +185,7 @@
   function speedWord(sp){ return sp==="TRAFFIC_JAM"?"Heavy":sp==="SLOW"?"Slow":sp==="NORMAL"?"Clear":"\u2014"; }
 
   async function processUrl(mapsUrl, start){
-    ["mapWrap","trafficPanel","routes","turnsBox","actions","handoffHint","debug","modeHead","modes"].forEach(id=>$(id).hidden=true);
+    ["mapWrap","trafficPanel","routes","turnsBox","actions","handoffHint","debug","modeHead"].forEach(id=>$(id).hidden=true);
     if(!start) $("startBox").hidden=true;
     routes=[]; scrubT=null; lastStart=start||null; $("scrubOut").innerHTML="&nbsp;"; currentLink=mapsUrl;
     setStatus(start?"Finding routes from your start point\u2026":"Finding route options\u2026");
@@ -339,7 +340,7 @@
     document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);
   });
   function submitStart(){ const v=$("startInput").value.trim(); if(v&&currentLink) processUrl(currentLink,v); }
-  function submitManual(){ const v=firstUrl($("manualInput").value)||$("manualInput").value.trim(); if(v){ forcedMode=null; processUrl(v); } }
+  function submitManual(){ const v=firstUrl($("manualInput").value)||$("manualInput").value.trim(); if(v){ forcedMode=null; $("modes").hidden=true; processUrl(v); } }
   $("startBtn").addEventListener("click", submitStart);
   $("manualBtn").addEventListener("click", submitManual);
   $("startInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); submitStart(); } });
@@ -353,14 +354,14 @@
     else $("modeByline").hidden=true;
     $("modeHead").hidden = false;
   }
-  const MODE_LIST=[["DRIVE","Drive"],["WALK","Walk"],["BICYCLE","Cycle"],["TWO_WHEELER","Two-wheeler"]];
+  const MODE_LIST=[["DRIVE","Drive"],["TWO_WHEELER","Two-wheeler"],["WALK","Walk"],["BICYCLE","Cycle"]];
   function renderModes(active){
     activeMode=active;
     $("modes").innerHTML=MODE_LIST.map(function(p){ return '<button type="button" class="mode-chip" data-mode="'+p[0]+'" title="'+p[1]+'" aria-label="'+p[1]+'" aria-selected="'+(p[0]===active?"true":"false")+'">'+modeIcon(p[0])+'</button>'; }).join("");
     $("modes").querySelectorAll(".mode-chip").forEach(function(btn){ btn.addEventListener("click",function(){ refetchMode(btn.dataset.mode); }); });
     $("modes").hidden=false;
   }
-  function refetchMode(m){ if(m===activeMode||!currentLink) return; forcedMode=m; processUrl(currentLink,lastStart); }
+  function refetchMode(m){ if(m===activeMode||!currentLink) return; forcedMode=m; renderModes(m); processUrl(currentLink,lastStart); }
 
   function showDebug(info){ const pre=$("debugPre"); pre.innerHTML="";
     if(info&&info.expandedUrl){ const a=document.createElement("a"); a.href=info.expandedUrl; a.textContent=info.expandedUrl; a.target="_blank"; pre.appendChild(a); pre.appendChild(document.createTextNode("\n\n")); }
