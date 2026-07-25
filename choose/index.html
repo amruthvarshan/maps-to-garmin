@@ -18,11 +18,13 @@
   *{box-sizing:border-box}
   [hidden]{display:none !important}
   html,body{margin:0;background:var(--bg)}
-  body{font-family:"Space Grotesk",system-ui,sans-serif;color:var(--text);min-height:100dvh;
-    display:flex;justify-content:center;padding:26px 16px calc(26px + env(safe-area-inset-bottom));line-height:1.5}
-  .wrap{width:100%;max-width:480px}
+  body{font-family:"Space Grotesk",system-ui,sans-serif;color:var(--text);height:100dvh;overflow:hidden;
+    display:flex;justify-content:center;line-height:1.5}
+  .wrap{width:100%;max-width:480px;height:100dvh;display:flex;flex-direction:column;padding:0 16px}
+  .app-header{flex:0 0 auto;padding:24px 0 16px;border-bottom:1px solid var(--line);position:relative;z-index:1;box-shadow:0 10px 18px -12px rgba(0,0,0,.6)}
+  .app-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:18px 0 calc(24px + env(safe-area-inset-bottom))}
   .eyebrow{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--mint);margin:0 0 8px}
-  h1{font-size:clamp(26px,7.5vw,38px);font-weight:700;letter-spacing:-.02em;margin:0 0 32px;line-height:1.05}
+  h1{font-size:clamp(26px,7.5vw,38px);font-weight:700;letter-spacing:-.02em;margin:0 0 16px;line-height:1.05}
   h1 .arrow{color:var(--amber)}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:16px}
 
@@ -38,7 +40,7 @@
   .strip-outer svg{width:100%;height:18px;display:block}
   .scrub{font-family:"Space Mono",monospace;font-size:12px;color:var(--amber);min-height:16px;margin-top:6px}
 
-  .status{font-family:"Space Mono",monospace;font-size:13.5px;color:var(--muted);margin:12px 0 0;word-break:break-word}
+  .status{font-family:"Space Mono",monospace;font-size:13.5px;color:var(--muted);margin:0;word-break:break-word}
   .status.error{color:var(--danger)}
 
   .routes{display:grid;gap:10px;margin-top:14px}
@@ -93,60 +95,65 @@
 </head>
 <body>
 <main class="wrap">
-  <p class="eyebrow">Choose Your Route</p>
-  <h1>Google Maps <span class="arrow">&#8594;</span> Garmin</h1>
+  <header class="app-header">
+    <p class="eyebrow">Choose Your Route</p>
+    <h1>Google Maps <span class="arrow">&#8594;</span> Garmin</h1>
 
-  <section class="card">
     <div class="map-wrap" id="mapWrap" hidden>
       <svg id="map" viewBox="0 0 480 220" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
       <div class="badges" id="badges"></div>
       <div class="legend"><span><i style="background:var(--green)"></i>clear</span><span><i style="background:var(--orange)"></i>slow</span><span><i style="background:var(--red)"></i>heavy</span></div>
     </div>
 
-    <div id="trafficPanel" hidden>
-      <div class="sec-title" id="trafficTitle">Traffic along route · drag to inspect</div>
-      <div class="strip-outer" id="stripOuter"><svg id="strip" viewBox="0 0 480 18" preserveAspectRatio="none" aria-hidden="true"></svg></div>
-      <div class="scrub" id="scrubOut">&nbsp;</div>
-    </div>
-
-    <p class="status" id="status">Waiting for a Google Maps link...</p>
     <div class="modes" id="modes" hidden></div>
     <div class="mode-head" id="modeHead" hidden>
       <div class="mode-title" id="modeTitle">Driving route</div>
       <div class="mode-byline" id="modeByline" hidden></div>
     </div>
+  </header>
 
-    <div class="routes" id="routes" hidden></div>
+  <div class="app-scroll">
+    <section class="card">
+      <p class="status" id="status">Waiting for a Google Maps link...</p>
 
-    <details class="turns" id="turnsBox" hidden>
-      <summary id="turnsSummary">&#9656; Turn-by-turn for selected route</summary>
-      <div id="turns"></div>
-    </details>
+      <div id="trafficPanel" hidden>
+        <div class="sec-title" id="trafficTitle">Traffic along route · drag to inspect</div>
+        <div class="strip-outer" id="stripOuter"><svg id="strip" viewBox="0 0 480 18" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+        <div class="scrub" id="scrubOut">&nbsp;</div>
+      </div>
 
-    <div class="actions" id="actions" hidden>
-      <button class="btn-primary" id="downloadBtn">Download selected route</button>
-    </div>
-    <p class="dl-note" id="handoffHint" hidden>Download the .gpx file and open it with Garmin Connect.</p>
+      <div class="routes" id="routes" hidden></div>
 
-    <div class="manual" id="startBox" hidden style="margin-top:16px">
-      <label for="startInput">Start from &mdash; address or &ldquo;lat, lng&rdquo;</label>
-      <input id="startInput" type="text" inputmode="text" placeholder="e.g. MG Road, Bengaluru" />
-      <button class="btn-ghost" id="startBtn">Use this start</button>
-    </div>
+      <details class="turns" id="turnsBox" hidden>
+        <summary id="turnsSummary">&#9656; Turn-by-turn for selected route</summary>
+        <div id="turns"></div>
+      </details>
 
-    <details class="debug" id="debug" hidden>
-      <summary>Diagnostics</summary>
-      <pre id="debugPre"></pre>
-    </details>
-  </section>
+      <div class="actions" id="actions" hidden>
+        <button class="btn-primary" id="downloadBtn">Download selected route</button>
+      </div>
+      <p class="dl-note" id="handoffHint" hidden>Download the .gpx file and open it with Garmin Connect.</p>
 
-  <section class="card manual">
-    <label for="manualInput">Paste a Google Maps link to parse:</label>
-    <input id="manualInput" type="url" inputmode="url" placeholder="https://maps.app.goo.gl/&hellip;" />
-    <button class="btn-ghost" id="manualBtn">Find Routes</button>
-  </section>
+      <div class="manual" id="startBox" hidden style="margin-top:16px">
+        <label for="startInput">Start from &mdash; address or &ldquo;lat, lng&rdquo;</label>
+        <input id="startInput" type="text" inputmode="text" placeholder="e.g. MG Road, Bengaluru" />
+        <button class="btn-ghost" id="startBtn">Use this start</button>
+      </div>
 
-  <footer>Choose Your Route v1.0</footer>
+      <details class="debug" id="debug" hidden>
+        <summary>Diagnostics</summary>
+        <pre id="debugPre"></pre>
+      </details>
+    </section>
+
+    <section class="card manual">
+      <label for="manualInput">Paste a Google Maps link to parse:</label>
+      <input id="manualInput" type="url" inputmode="url" placeholder="https://maps.app.goo.gl/&hellip;" />
+      <button class="btn-ghost" id="manualBtn">Find Routes</button>
+    </section>
+
+    <footer>Choose Your Route v1.1</footer>
+  </div>
 </main>
 
 <script>
