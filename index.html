@@ -265,7 +265,7 @@
       <button class="btn-ghost" id="manualBtn">Generate GPX</button>
     </section>
 
-    <footer>Recommended Route v12</footer>
+    <footer>Recommended Route v13</footer>
   </main>
 
 <script>
@@ -527,7 +527,7 @@
   // If launched via the share sheet, the link is in the query string.
   const params = new URLSearchParams(location.search);
   const shared = params.get("url") || firstUrl(params.get("text")) || firstUrl(params.get("title"));
-  if (shared) processUrl(shared);
+  if (shared) { $("manualInput").value = shared; processUrl(shared); }
 </script>
 </body>
 </html>
