@@ -272,7 +272,7 @@
       <button class="btn-ghost" id="manualBtn">Generate GPX</button>
     </section>
 
-    <footer>Recommended Route v18</footer>
+    <footer>Recommended Route v19</footer>
   </main>
 
 <script>
@@ -312,7 +312,6 @@
     $("turnsBox").hidden = true;
     $("debug").hidden = true;
     $("downloadHint").hidden = true;
-    $("modes").hidden = true;
     if (!start) $("startBox").hidden = true;
     lastBlob = null;
     lastStart = start || null;
@@ -473,7 +472,7 @@
   }
   function submitManual() {
     const v = firstUrl($("manualInput").value) || $("manualInput").value.trim();
-    if (v) { forcedMode = null; processUrl(v); }
+    if (v) { forcedMode = null; $("modes").hidden = true; processUrl(v); }
   }
   $("downloadBtn").addEventListener("click", triggerDownload);
   $("startBtn").addEventListener("click", submitStart);
@@ -501,7 +500,7 @@
     }
     $("modeHead").hidden = false;
   }
-  const MODE_LIST = [["DRIVE", "Drive"], ["WALK", "Walk"], ["BICYCLE", "Cycle"], ["TWO_WHEELER", "Two-wheeler"]];
+  const MODE_LIST = [["DRIVE", "Drive"], ["TWO_WHEELER", "Two-wheeler"], ["WALK", "Walk"], ["BICYCLE", "Cycle"]];
   function renderModes(active) {
     activeMode = active;
     $("modes").innerHTML = MODE_LIST.map(function (p) {
@@ -512,7 +511,7 @@
     });
     $("modes").hidden = false;
   }
-  function refetchMode(m) { if (m === activeMode || !currentLink) return; forcedMode = m; processUrl(currentLink, lastStart); }
+  function refetchMode(m) { if (m === activeMode || !currentLink) return; forcedMode = m; renderModes(m); processUrl(currentLink, lastStart); }
   function parseRouteInfo(resp) {
     const h = resp.headers.get("X-Route-Info") || resp.headers.get("x-route-info");
     if (!h) return {};
